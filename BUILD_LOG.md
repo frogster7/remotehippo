@@ -124,9 +124,43 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Task 6: Employer dashboard (CRUD jobs)
+
+**What was done:**
+- **Data layer:** `lib/jobs.ts` – `slugifyTitle()`, `generateJobSlug(title)` for new jobs; `getEmployerJobs(employerId)` for dashboard list; `getJobByIdForEdit(jobId)` for edit page (RLS ensures only owner can read).
+- **Server actions:** `app/employer/actions.ts` – `createJob(form)` (generates slug, inserts, then redirects to dashboard), `updateJob(jobId, form)`, `deleteJob(jobId)` (redirects to dashboard on success). All actions call `ensureEmployer()` (redirect to login or profile if not employer).
+- **Dashboard:** `app/employer/dashboard/page.tsx` – server page; redirects to login or profile if not employer; lists own jobs with View (public slug), Edit, and status (Active/Draft); “New job” CTA.
+- **New job:** `app/employer/jobs/new/page.tsx` – employer-only; `JobForm` with create action.
+- **Edit job:** `app/employer/jobs/[id]/edit/page.tsx` – employer-only; loads job by id, 404 if not found or not owner; `JobForm` with update/delete actions.
+- **Job form:** `app/employer/job-form.tsx` – client component; fields: title, role, description, work_type, job_type, tech_stack (comma/semicolon), salary min/max, location, eu_timezone_friendly, is_active; Create / Save / Cancel / Delete (edit only). Uses shadcn `Input`, `Label`, `Select`, `Checkbox`, `Card`, `Button`.
+- **Header:** Dashboard link shown only when user is employer (profile.role === 'employer'); header fetches profile when user exists.
+- **shadcn:** Added `checkbox` component.
+
+**Key files:**
+- `lib/jobs.ts` – employer helpers and slug generation.
+- `app/employer/actions.ts` – create/update/delete job (server actions).
+- `app/employer/dashboard/page.tsx` – employer dashboard list.
+- `app/employer/jobs/new/page.tsx` – new job page.
+- `app/employer/jobs/[id]/edit/page.tsx` – edit job page.
+- `app/employer/job-form.tsx` – shared form for new/edit.
+- `app/_components/header.tsx` – Dashboard link for employers.
+
+**Notes:** Edit route uses job `id` (uuid), not slug, so URLs are stable and ownership is enforced by RLS. Create uses auto-generated unique slug. Non-employers hitting employer routes are redirected to profile.
+
+---
+
+## Fix: Employer dashboard – client/server boundary (Task 6 follow-up)
+
+**What was done:**
+- **JobFormData** moved from `app/employer/actions.ts` to `lib/types.ts` so the client `JobForm` never imports from the `"use server"` actions file (avoids webpack bundling server-only code in the client and “Cannot read properties of undefined (reading 'call')”).
+- **JobForm** action props (`createAction`, `updateAction`, `deleteAction`) made optional; new job page passes only `createAction={createJob}`; edit page passes only `updateAction` and `deleteAction`. Removed inline lambdas (e.g. `async () => ({ error: "..." })`) so no non–server-action functions are passed to the Client Component (fixes “Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with 'use server'”).
+
+**Key files:** `lib/types.ts` (JobFormData), `app/employer/job-form.tsx` (optional props, guards), `app/employer/jobs/new/page.tsx`, `app/employer/jobs/[id]/edit/page.tsx` (only pass the actions each page needs).
+
+---
+
 ## Not done yet (from PROJECT_BRIEF §13)
 
-- **Task 6:** Employer dashboard – CRUD jobs, `/employer/dashboard`, `/employer/jobs/new`, `/employer/jobs/[id]/edit`.
 - **Task 7:** Favorites – job seekers save jobs, `/saved-jobs`.
 - **Task 8:** SEO – meta tags, sitemap, robots, etc.
 - **Task 9:** Final polish.
@@ -144,5 +178,6 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Fix header / auth state     | `app/_components/header.tsx`, `app/layout.tsx` |
 | Jobs list / filters         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` |
 | Job detail                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts` |
+| Employer dashboard / CRUD   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

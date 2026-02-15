@@ -83,3 +83,49 @@ export async function getFilterOptions(): Promise<{
   ) as string[];
   return { roles: roles.sort(), tech: tech.sort() };
 }
+
+/** Slug base from title (lowercase, hyphens, alphanumeric). */
+export function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "job";
+}
+
+/** Generate a unique slug for a new job (slug base + short random suffix). */
+export function generateJobSlug(title: string): string {
+  const base = slugifyTitle(title);
+  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return `${base}-${suffix}`;
+}
+
+/** All jobs for an employer (active + inactive). Used for dashboard. */
+export async function getEmployerJobs(employerId: string): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, created_at, updated_at",
+    )
+    .eq("employer_id", employerId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Job[];
+}
+
+/** Single job by id for edit; RLS ensures only owner can read. */
+export async function getJobByIdForEdit(jobId: string): Promise<Job | null> {
+  const supabase = await createClient();
+  const { data: row, error } = await supabase
+    .from("jobs")
+    .select(
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, created_at, updated_at",
+    )
+    .eq("id", jobId)
+    .single();
+  if (error || !row) return null;
+  return row as Job;
+}

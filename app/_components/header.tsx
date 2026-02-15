@@ -6,6 +6,14 @@ export async function Header() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const profile = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+        .then((r) => r.data)
+    : null;
 
   return (
     <header className="border-b">
@@ -21,12 +29,22 @@ export async function Header() {
             Jobs
           </Link>
           {user ? (
-            <Link
-              href="/profile"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Profile
-            </Link>
+            <>
+              {profile?.role === "employer" && (
+                <Link
+                  href="/employer/dashboard"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Dashboard
+                </Link>
+              )}
+              <Link
+                href="/profile"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Profile
+              </Link>
+            </>
           ) : (
             <>
               <Link

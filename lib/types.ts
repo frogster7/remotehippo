@@ -29,6 +29,21 @@ export interface Job {
   };
 }
 
+/** Payload for creating/updating a job (employer form). */
+export interface JobFormData {
+  title: string;
+  description: string;
+  role: string;
+  work_type: WorkType;
+  job_type: JobType;
+  tech_stack: string[];
+  salary_min: number | null;
+  salary_max: number | null;
+  location: string | null;
+  eu_timezone_friendly: boolean;
+  is_active: boolean;
+}
+
 export interface JobFilters {
   role?: string;
   work_type?: WorkType;
