@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,6 @@ import {
 } from "@/components/ui/card";
 
 export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +33,8 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
       setError(err.message);
       return;
     }
-    router.refresh();
-    router.push(redirectTo);
+    // Full page load so the layout (header) re-renders with the new session
+    window.location.href = redirectTo;
   }
 
   return (

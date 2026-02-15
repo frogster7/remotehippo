@@ -14,6 +14,12 @@ export async function Header() {
           Niche Job Board
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <Link
+            href="/jobs"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Jobs
+          </Link>
           {user ? (
             <Link
               href="/profile"

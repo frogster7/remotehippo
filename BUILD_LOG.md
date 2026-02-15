@@ -89,9 +89,43 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Task 5: Public job pages
+
+**What was done:**
+- **Types:** `lib/types.ts` – `Job`, `JobFilters`, `WorkType`, `JobType`, and constants `WORK_TYPES`, `JOB_TYPES`.
+- **Data layer:** `lib/jobs.ts` – `getJobs(filters)` for list with filters, `getJobBySlug(slug)` for detail (with employer profile embed), `getFilterOptions()` for role/tech dropdowns.
+- **List page:** `app/jobs/page.tsx` – SSR, reads `searchParams` (q, role, work_type, job_type, tech, salary_min, salary_max), renders job cards with link to `/jobs/[slug]`. Empty state when no results.
+- **Filters UI:** `app/jobs/jobs-filter.tsx` – client component using shadcn `Select`, `Input`, `Button`; syncs filters to URL via `useSearchParams` / `router.push`; Clear filters when any filter is set.
+- **Detail page:** `app/jobs/[slug]/page.tsx` – SSR, `generateMetadata` for title/description, employer block (logo, company name, website), tech stack badges, salary, location, description, apply CTA.
+- **Navigation:** Header has “Jobs” link; home page has “Browse jobs” CTA.
+- **shadcn:** Added `badge`, `select` components.
+
+**Key files:**
+- `lib/types.ts` – job and filter types.
+- `lib/jobs.ts` – server-side job queries (use `createClient()` from `@/lib/supabase/server`).
+- `app/jobs/page.tsx` – jobs list (server).
+- `app/jobs/jobs-filter.tsx` – filters (client, URL-driven).
+- `app/jobs/[slug]/page.tsx` – job detail (server).
+
+**Notes:** List and detail are server-rendered for SEO. Filter state is in the URL so filtered views are shareable/indexable. Apply button uses a placeholder `mailto:`; real apply flow (e.g. employer email or link) can be added in employer dashboard (Task 6).
+
+---
+
+## Fix: Header not updating after login / sign out
+
+**What was done:**
+- Login and sign out now use a **full page redirect** (`window.location.href`) instead of `router.refresh()` + `router.push()`. The header is a server component that reads the session from cookies; client-side navigation did not always re-run the layout with the new cookies, so the header kept showing “Log in” / “Sign up” or “Profile” until a manual refresh.
+- **Login:** `app/login/login-form.tsx` – after successful `signInWithPassword`, redirect with `window.location.href = redirectTo`.
+- **Sign out:** `app/profile/profile-form.tsx` – after `signOut()`, redirect with `window.location.href = "/"`.
+
+**Key files:** `app/login/login-form.tsx`, `app/profile/profile-form.tsx`.
+
+**Notes:** PROJECT_BRIEF.md is the product/scope spec and is not updated with implementation details; BUILD_LOG.md (this file) is the implementation log.
+
+---
+
 ## Not done yet (from PROJECT_BRIEF §13)
 
-- **Task 5:** Public job pages – `/jobs` (list + filters), `/jobs/[slug]` (detail).
 - **Task 6:** Employer dashboard – CRUD jobs, `/employer/dashboard`, `/employer/jobs/new`, `/employer/jobs/[id]/edit`.
 - **Task 7:** Favorites – job seekers save jobs, `/saved-jobs`.
 - **Task 8:** SEO – meta tags, sitemap, robots, etc.
@@ -108,5 +142,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Fix auth (login/register)   | `app/login/*`, `app/register/*`, `app/auth/callback/route.ts` |
 | Fix profile                 | `app/profile/*`, RLS on `profiles` |
 | Fix header / auth state     | `app/_components/header.tsx`, `app/layout.tsx` |
+| Jobs list / filters         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` |
+| Job detail                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

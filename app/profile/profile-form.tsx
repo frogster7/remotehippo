@@ -64,8 +64,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+    // Full page load so the layout (header) re-renders without the session
+    window.location.href = "/";
   }
 
   return (
