@@ -5,6 +5,7 @@ import { JobsFilter } from "./jobs-filter";
 import { JobCard } from "./job-card";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site";
+import { formatRelativeTime } from "@/lib/format";
 import type { JobFilters, WorkType, JobType } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -15,6 +16,7 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
   };
   const salaryMin = get("salary_min");
   const salaryMax = get("salary_max");
+  const euOnly = get("eu_timezone_friendly");
   return {
     q: get("q") ?? undefined,
     role: get("role") ?? undefined,
@@ -23,6 +25,7 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
     tech: get("tech") ?? undefined,
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
+    eu_timezone_friendly: euOnly === "1" || euOnly === "true",
   };
 }
 
@@ -52,6 +55,7 @@ export async function generateMetadata({
   const canonical = `${base}/jobs${qs}`;
 
   const parts: string[] = [];
+  if (filters.eu_timezone_friendly) parts.push("EU timezone only");
   if (filters.work_type) parts.push(filters.work_type);
   if (filters.job_type) parts.push(filters.job_type);
   if (filters.role) parts.push(filters.role);
@@ -132,6 +136,7 @@ export default async function JobsPage({
                 <li key={job.id}>
                   <JobCard
                     job={job}
+                    postedAt={formatRelativeTime(job.created_at)}
                     isFavorited={favoritedJobIds.has(job.id)}
                     isLoggedIn={!!user}
                   />

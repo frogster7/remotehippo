@@ -1,10 +1,16 @@
 import type { MetadataRoute } from "next";
 import { getSiteUrl } from "@/lib/site";
-import { getActiveJobSlugs } from "@/lib/jobs";
+import {
+  getActiveJobSlugs,
+  getEmployerIdsWithActiveJobs,
+} from "@/lib/jobs";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
-  const slugs = await getActiveJobSlugs();
+  const [slugs, employerIds] = await Promise.all([
+    getActiveJobSlugs(),
+    getEmployerIdsWithActiveJobs(),
+  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -28,5 +34,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...jobPages];
+  const employerPages: MetadataRoute.Sitemap = employerIds.map((id) => ({
+    url: `${base}/employer/${id}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...jobPages, ...employerPages];
 }

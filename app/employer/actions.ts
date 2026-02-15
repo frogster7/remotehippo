@@ -42,6 +42,8 @@ export async function createJob(form: JobFormData): Promise<{ error?: string }> 
     location: form.location?.trim() || null,
     eu_timezone_friendly: form.eu_timezone_friendly,
     is_active: form.is_active,
+    application_email: form.application_email?.trim() || null,
+    application_url: form.application_url?.trim() || null,
   });
   if (error) return { error: error.message };
   revalidatePath("/employer/dashboard");
@@ -73,6 +75,8 @@ export async function updateJob(
       location: form.location?.trim() || null,
       eu_timezone_friendly: form.eu_timezone_friendly,
       is_active: form.is_active,
+      application_email: form.application_email?.trim() || null,
+      application_url: form.application_url?.trim() || null,
     })
     .eq("id", jobId);
   if (error) return { error: error.message };
@@ -90,4 +94,28 @@ export async function deleteJob(jobId: string): Promise<{ error?: string }> {
   revalidatePath("/employer/dashboard");
   revalidatePath("/jobs");
   redirect("/employer/dashboard");
+}
+
+export async function closeJob(jobId: string): Promise<{ error?: string }> {
+  const { supabase } = await ensureEmployer();
+  const { error } = await supabase
+    .from("jobs")
+    .update({ closed_at: new Date().toISOString() })
+    .eq("id", jobId);
+  if (error) return { error: error.message };
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/jobs");
+  return {};
+}
+
+export async function reopenJob(jobId: string): Promise<{ error?: string }> {
+  const { supabase } = await ensureEmployer();
+  const { error } = await supabase
+    .from("jobs")
+    .update({ closed_at: null })
+    .eq("id", jobId);
+  if (error) return { error: error.message };
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/jobs");
+  return {};
 }

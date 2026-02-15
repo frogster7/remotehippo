@@ -8,6 +8,7 @@ import type { Job } from "@/lib/types";
 
 interface JobCardProps {
   job: Job;
+  postedAt?: string;
   isFavorited: boolean;
   isLoggedIn: boolean;
 }
@@ -20,7 +21,7 @@ function formatSalary(min: number | null, max: number | null): string {
   return `Up to ${(max! / 1000).toFixed(0)}k`;
 }
 
-export function JobCard({ job, isFavorited, isLoggedIn }: JobCardProps) {
+export function JobCard({ job, postedAt, isFavorited, isLoggedIn }: JobCardProps) {
   return (
     <Card className="transition-colors hover:bg-muted/50">
       <CardHeader className="pb-2">
@@ -38,6 +39,9 @@ export function JobCard({ job, isFavorited, isLoggedIn }: JobCardProps) {
               {job.eu_timezone_friendly && (
                 <Badge variant="secondary">EU-friendly</Badge>
               )}
+              {job.closed_at && (
+                <Badge variant="secondary">Filled</Badge>
+              )}
             </div>
             <FavoriteButton
               jobId={job.id}
@@ -54,6 +58,7 @@ export function JobCard({ job, isFavorited, isLoggedIn }: JobCardProps) {
             {job.description}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {postedAt && <span>Posted {postedAt}</span>}
             {job.tech_stack?.length > 0 && (
               <span className="flex flex-wrap gap-1">
                 {job.tech_stack.slice(0, 5).map((t) => (

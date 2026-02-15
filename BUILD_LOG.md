@@ -234,6 +234,27 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Post-MVP enhancements (Steps 1–4)
+
+**What was done (after Task 9):**
+
+- **Step 1 – Apply URL/email per job:** Migration `002_job_application_fields.sql` adds `application_email` and `application_url` to `jobs`. Employer form has optional fields; job detail Apply button uses URL → email → company website → placeholder. Types and all job selects updated; `.env` unchanged.
+- **Step 2 – “Posted X days ago” + Close listing:** `lib/format.ts` – `formatRelativeTime()`. Migration `003_job_closed_at.sql` adds `closed_at` to jobs. Job list and detail show “Posted X ago”; employer dashboard shows “Close listing” / “Reopen listing” via `app/employer/close-reopen-button.tsx`. When `closed_at` is set, detail shows “Position filled” and no Apply button; cards show “Filled” badge.
+- **Step 3 – EU timezone quick filter:** `JobFilters.eu_timezone_friendly`; `getJobs()` filters by it when true. Jobs list has “EU timezone only” checkbox in `jobs-filter.tsx`; URL `eu_timezone_friendly=1`; metadata and canonical include it.
+- **Step 4 – Public employer/company page:** `app/employer/[id]/page.tsx` – public profile (logo, name, website) + active jobs (JobCards). `lib/jobs.ts`: `getEmployerPublicProfile(id)`, `getActiveJobsByEmployer(employerId)`, `getEmployerIdsWithActiveJobs()`. Job detail links “View all jobs from this company” → `/employer/[id]`. Robots disallow only `/employer/dashboard` and `/employer/jobs`; sitemap includes `/employer/{id}` for employers with active jobs.
+
+**Key files (steps 1–4):**
+- Migrations: `002_job_application_fields.sql`, `003_job_closed_at.sql` (run after 001).
+- `lib/format.ts`, `lib/types.ts` (JobFilters.eu_timezone_friendly, Job closed_at / application_*).
+- `lib/jobs.ts` (application/closed_at in selects, getEmployerPublicProfile, getActiveJobsByEmployer, getEmployerIdsWithActiveJobs).
+- `app/employer/actions.ts` (closeJob, reopenJob), `app/employer/close-reopen-button.tsx`, `app/employer/[id]/page.tsx`.
+- `app/jobs/jobs-filter.tsx` (EU checkbox), `app/jobs/page.tsx`, `app/jobs/[slug]/page.tsx`, `app/jobs/job-card.tsx` (postedAt, Filled badge).
+- `app/sitemap.ts`, `app/robots.ts`.
+
+**Deferred (see FUTURE.md):** Step 5 – Job alerts (email).
+
+---
+
 ## Quick reference
 
 | Need to…                    | Look at… |
@@ -249,5 +270,9 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Favorites / saved jobs      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
 | SEO (sitemap, robots, meta)  | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata |
 | Loading / polish            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states |
+| Apply URL/email, close listing | `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/employer/actions.ts`, `app/employer/close-reopen-button.tsx`, migrations 002–003 |
+| EU timezone filter          | `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` (getJobs), `lib/types.ts` (JobFilters) |
+| Public employer page        | `app/employer/[id]/page.tsx`, `lib/jobs.ts` (getEmployerPublicProfile, getActiveJobsByEmployer) |
+| Job alerts (later)          | See `FUTURE.md` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

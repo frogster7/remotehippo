@@ -21,7 +21,9 @@ In the Supabase Dashboard, open **SQL Editor** and run the contents of:
 
 **`supabase/migrations/001_initial_schema.sql`**
 
-This creates:
+Then run **`supabase/migrations/002_job_application_fields.sql`** (application email/URL per job) and **`supabase/migrations/003_job_closed_at.sql`** (optional “position filled” / close listing).
+
+The first migration creates:
 
 - Tables: `profiles`, `jobs`, `job_favorites`
 - Enums: `profile_role`, `work_type`, `job_type`

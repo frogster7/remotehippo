@@ -70,6 +70,12 @@ export function JobForm({
     job?.salary_max != null ? String(job.salary_max) : ""
   );
   const [location, setLocation] = useState(job?.location ?? "");
+  const [applicationEmail, setApplicationEmail] = useState(
+    job?.application_email ?? ""
+  );
+  const [applicationUrl, setApplicationUrl] = useState(
+    job?.application_url ?? ""
+  );
   const [euFriendly, setEuFriendly] = useState(
     job?.eu_timezone_friendly ?? true
   );
@@ -88,6 +94,8 @@ export function JobForm({
       location: location.trim() || null,
       eu_timezone_friendly: euFriendly,
       is_active: isActive,
+      application_email: applicationEmail.trim() || null,
+      application_url: applicationUrl.trim() || null,
     };
   }
 
@@ -257,6 +265,36 @@ export function JobForm({
               placeholder="e.g. Europe, or City (for hybrid)"
               disabled={loading}
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="application_email">Application email</Label>
+              <Input
+                id="application_email"
+                type="email"
+                value={applicationEmail}
+                onChange={(e) => setApplicationEmail(e.target.value)}
+                placeholder="e.g. jobs@company.com"
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. Applicants will get a mailto link.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="application_url">Application URL</Label>
+              <Input
+                id="application_url"
+                type="url"
+                value={applicationUrl}
+                onChange={(e) => setApplicationUrl(e.target.value)}
+                placeholder="e.g. https://company.com/careers/apply"
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. Link to your careers page or ATS.
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-6">
             <div className="flex items-center space-x-2">

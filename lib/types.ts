@@ -18,6 +18,9 @@ export interface Job {
   location: string | null;
   eu_timezone_friendly: boolean;
   is_active: boolean;
+  application_email: string | null;
+  application_url: string | null;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
   employer?: {
@@ -42,6 +45,8 @@ export interface JobFormData {
   location: string | null;
   eu_timezone_friendly: boolean;
   is_active: boolean;
+  application_email: string | null;
+  application_url: string | null;
 }
 
 export interface JobFilters {
@@ -52,6 +57,8 @@ export interface JobFilters {
   salary_min?: number;
   salary_max?: number;
   q?: string;
+  /** When true, only jobs with eu_timezone_friendly = true */
+  eu_timezone_friendly?: boolean;
 }
 
 export const WORK_TYPES: { value: WorkType; label: string }[] = [

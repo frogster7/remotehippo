@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/app/favorites/favorite-button";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site";
+import { formatRelativeTime } from "@/lib/format";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -90,7 +91,13 @@ export default async function JobDetailPage({ params }: Props) {
               {job.eu_timezone_friendly && (
                 <Badge variant="secondary">EU timezone friendly</Badge>
               )}
+              {job.closed_at && (
+                <Badge variant="secondary">Position filled</Badge>
+              )}
             </div>
+            <p className="text-sm text-muted-foreground">
+              Posted {formatRelativeTime(job.created_at)}
+            </p>
             {job.employer && (
               <div className="flex items-center gap-3 pt-2 border-t">
                 {job.employer.company_logo_url ? (
@@ -119,6 +126,12 @@ export default async function JobDetailPage({ params }: Props) {
                       {job.employer.company_website.replace(/^https?:\/\//, "")}
                     </a>
                   )}
+                  <Link
+                    href={`/employer/${job.employer_id}`}
+                    className="text-sm text-primary hover:underline mt-1 inline-block"
+                  >
+                    View all jobs from this company →
+                  </Link>
                 </div>
               </div>
             )}
@@ -155,14 +168,67 @@ export default async function JobDetailPage({ params }: Props) {
               </div>
             </div>
             <div className="pt-4">
-              <Button asChild>
-                <a href={`mailto:jobs@example.com?subject=Application: ${encodeURIComponent(job.title)}`}>
-                  Apply for this job
-                </a>
-              </Button>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Apply via the company website or contact above when available.
-              </p>
+              {job.closed_at ? (
+                <p className="text-muted-foreground text-sm">
+                  This position has been filled. Applications are no longer accepted.
+                </p>
+              ) : job.application_url ? (
+                <>
+                  <Button asChild>
+                    <a
+                      href={job.application_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Apply for this job
+                    </a>
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    You will be directed to the employer’s application process.
+                  </p>
+                </>
+              ) : job.application_email ? (
+                <>
+                  <Button asChild>
+                    <a
+                      href={`mailto:${job.application_email}?subject=Application: ${encodeURIComponent(job.title)}`}
+                    >
+                      Apply by email
+                    </a>
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    You will be directed to the employer’s application process.
+                  </p>
+                </>
+              ) : job.employer?.company_website ? (
+                <>
+                  <Button asChild>
+                    <a
+                      href={job.employer.company_website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Apply via company website
+                    </a>
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Apply via the company website above.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button asChild>
+                    <a
+                      href={`mailto:jobs@example.com?subject=Application: ${encodeURIComponent(job.title)}`}
+                    >
+                      Apply for this job
+                    </a>
+                  </Button>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Apply via the company website or contact when available.
+                  </p>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

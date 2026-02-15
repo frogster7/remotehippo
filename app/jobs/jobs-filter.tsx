@@ -11,12 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WORK_TYPES, JOB_TYPES } from "@/lib/types";
 import type { JobFilters } from "@/lib/types";
 
 function getFiltersFromSearchParams(sp: URLSearchParams): Partial<JobFilters> {
   const salaryMin = sp.get("salary_min");
   const salaryMax = sp.get("salary_max");
+  const euOnly = sp.get("eu_timezone_friendly");
   return {
     q: sp.get("q") ?? undefined,
     role: sp.get("role") ?? undefined,
@@ -25,6 +27,7 @@ function getFiltersFromSearchParams(sp: URLSearchParams): Partial<JobFilters> {
     tech: sp.get("tech") ?? undefined,
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
+    eu_timezone_friendly: euOnly === "1" || euOnly === "true",
   };
 }
 
@@ -37,6 +40,7 @@ function filtersToParams(f: Partial<JobFilters>): URLSearchParams {
   if (f.tech?.trim()) p.set("tech", f.tech.trim());
   if (f.salary_min != null && f.salary_min > 0) p.set("salary_min", String(f.salary_min));
   if (f.salary_max != null && f.salary_max > 0) p.set("salary_max", String(f.salary_max));
+  if (f.eu_timezone_friendly) p.set("eu_timezone_friendly", "1");
   return p;
 }
 
@@ -66,6 +70,7 @@ export function JobsFilter({
   }, [router]);
 
   const hasFilters =
+    filters.eu_timezone_friendly ||
     filters.q ||
     filters.role ||
     filters.work_type ||
@@ -77,6 +82,21 @@ export function JobsFilter({
   return (
     <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
       <div className="flex flex-wrap items-end gap-3">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="eu_only"
+            checked={!!filters.eu_timezone_friendly}
+            onCheckedChange={(checked) =>
+              updateFilters({ eu_timezone_friendly: !!checked })
+            }
+          />
+          <label
+            htmlFor="eu_only"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            EU timezone only
+          </label>
+        </div>
         <div className="min-w-[180px]">
           <label className="mb-1 block text-xs font-medium text-muted-foreground">Search</label>
           <Input

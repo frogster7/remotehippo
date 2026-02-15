@@ -3,9 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEmployerJobs } from "@/lib/jobs";
+import { formatRelativeTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CloseReopenButton } from "../close-reopen-button";
 
 export const metadata: Metadata = {
   title: "Employer dashboard | Niche Tech Job Board",
@@ -84,6 +86,9 @@ export default async function EmployerDashboardPage() {
                           ) : (
                             <Badge variant="secondary">Draft</Badge>
                           )}
+                          {job.closed_at && (
+                            <Badge variant="secondary">Filled</Badge>
+                          )}
                           <Badge variant="outline">{job.work_type}</Badge>
                         </div>
                       </div>
@@ -95,8 +100,9 @@ export default async function EmployerDashboardPage() {
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
                       </Button>
+                      <CloseReopenButton jobId={job.id} closedAt={job.closed_at} />
                       <span className="text-xs text-muted-foreground">
-                        Updated{" "}
+                        Posted {formatRelativeTime(job.created_at)} · Updated{" "}
                         {new Date(job.updated_at).toLocaleDateString()}
                       </span>
                     </CardContent>
