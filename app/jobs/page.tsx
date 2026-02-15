@@ -3,7 +3,9 @@ import { getJobs, getFilterOptions, getFavoritedJobIds } from "@/lib/jobs";
 import { JobsFilter } from "./jobs-filter";
 import { JobCard } from "./job-card";
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/site";
 import type { JobFilters, WorkType, JobType } from "@/lib/types";
+import type { Metadata } from "next";
 
 function parseFilters(searchParams: Record<string, string | string[] | undefined>): JobFilters {
   const get = (k: string) => {
@@ -23,11 +25,62 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
   };
 }
 
-export const metadata = {
-  title: "Jobs | Niche Tech Job Board",
-  description:
-    "Browse remote-friendly tech jobs. Filter by role, work type, job type, tech stack and salary.",
-};
+function buildJobsQueryString(params: Record<string, string | string[] | undefined>): string {
+  const entries = Object.entries(params).filter(
+    ([, v]) => v !== undefined && v !== "" && (Array.isArray(v) ? v[0] : v) !== ""
+  );
+  if (entries.length === 0) return "";
+  const search = new URLSearchParams();
+  for (const [k, v] of entries) {
+    const val = Array.isArray(v) ? v[0] : v;
+    if (val != null && val !== "") search.set(k, val);
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = searchParams != null ? await searchParams : {};
+  const filters = parseFilters(params);
+  const base = getSiteUrl();
+  const qs = buildJobsQueryString(params);
+  const canonical = `${base}/jobs${qs}`;
+
+  const parts: string[] = [];
+  if (filters.work_type) parts.push(filters.work_type);
+  if (filters.job_type) parts.push(filters.job_type);
+  if (filters.role) parts.push(filters.role);
+  if (filters.tech) parts.push(filters.tech);
+  if (filters.q) parts.push(`"${filters.q}"`);
+  const filterLabel = parts.length > 0 ? ` – ${parts.join(", ")}` : "";
+
+  const title = `Jobs${filterLabel}`;
+  const description =
+    parts.length > 0
+      ? `Remote-friendly tech jobs: ${parts.join(", ")}. EU timezone. Filter by role, work type, salary and more.`
+      : "Browse remote-friendly tech jobs. Filter by role, work type, job type, tech stack and salary. EU timezone.";
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 

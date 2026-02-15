@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/app/favorites/favorite-button";
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/site";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -23,9 +24,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await getJobBySlug(slug);
   if (!job) return { title: "Job not found" };
   const company = job.employer?.company_name ?? job.employer?.full_name ?? "Company";
+  const title = `${job.title} at ${company}`;
+  const description =
+    job.description.slice(0, 160).replace(/\s+/g, " ").trim() + (job.description.length > 160 ? "…" : "");
+  const canonical = `${getSiteUrl()}/jobs/${slug}`;
   return {
-    title: `${job.title} at ${company} | Niche Tech Job Board`,
-    description: job.description.slice(0, 160).replace(/\s+/g, " ").trim() + (job.description.length > 160 ? "…" : ""),
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 

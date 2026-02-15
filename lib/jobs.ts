@@ -64,6 +64,17 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
   return { ...rest, employer: profiles ?? undefined } as Job;
 }
 
+/** All active job slugs (for sitemap). */
+export async function getActiveJobSlugs(): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("slug")
+    .eq("is_active", true);
+  if (error) throw error;
+  return (data ?? []).map((row) => row.slug);
+}
+
 /** All distinct roles and tech_stack values for filter dropdowns (optional). */
 export async function getFilterOptions(): Promise<{
   roles: string[];

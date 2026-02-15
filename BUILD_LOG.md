@@ -159,9 +159,31 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Task 8: SEO (meta tags, sitemap, robots, OpenGraph, canonical)
+
+**What was done:**
+- **Site URL:** `lib/site.ts` – `getSiteUrl()` reads `NEXT_PUBLIC_SITE_URL` or falls back to localhost (server) / `window.location.origin` (client). Documented in `.env.example`.
+- **Root layout:** `app/layout.tsx` – `metadataBase`, title template `%s | Niche Tech Job Board`, OpenGraph (title, description, type, locale), Twitter card (summary_large_image), robots index/follow.
+- **Job detail:** `app/jobs/[slug]/page.tsx` – `generateMetadata` extended with `alternates.canonical` (`/jobs/[slug]`), OpenGraph (title, description, url, type), Twitter (card, title, description).
+- **Jobs list (indexable filter pages):** `app/jobs/page.tsx` – static metadata replaced with `generateMetadata({ searchParams })`: dynamic title/description from active filters (e.g. "Jobs – remote, React"), canonical URL for current query (so each filter view has one canonical), OpenGraph and Twitter for share previews.
+- **Sitemap:** `app/sitemap.ts` – dynamic sitemap: `/`, `/jobs`, and all `/jobs/[slug]` for active jobs (via `getActiveJobSlugs()` in `lib/jobs.ts`). Uses `getSiteUrl()` for base URL.
+- **Robots:** `app/robots.ts` – allow `/`, disallow `/employer/`, `/profile`, `/saved-jobs`, `/login`, `/register`, `/auth/`; sitemap URL from `getSiteUrl()`.
+
+**Key files:**
+- `lib/site.ts` – getSiteUrl().
+- `lib/jobs.ts` – getActiveJobSlugs() for sitemap.
+- `app/layout.tsx` – default metadata + OG/Twitter.
+- `app/jobs/page.tsx` – generateMetadata with searchParams, canonical, OG.
+- `app/jobs/[slug]/page.tsx` – canonical, OG, Twitter.
+- `app/sitemap.ts`, `app/robots.ts`.
+- `.env.example` – NEXT_PUBLIC_SITE_URL.
+
+**Notes:** Set `NEXT_PUBLIC_SITE_URL` in production (e.g. on Vercel) so sitemap, robots, and canonical/OG URLs use the real domain. Filter pages are indexable with descriptive meta and canonical URLs.
+
+---
+
 ## Not done yet (from PROJECT_BRIEF §13)
 
-- **Task 8:** SEO – meta tags, sitemap, robots, etc.
 - **Task 9:** Final polish.
 
 ---
@@ -205,5 +227,6 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Job detail                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts` |
 | Employer dashboard / CRUD   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts` |
 | Favorites / saved jobs      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
+| SEO (sitemap, robots, meta)  | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |
