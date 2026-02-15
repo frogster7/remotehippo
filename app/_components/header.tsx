@@ -19,7 +19,7 @@ export async function Header() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 h-14 flex items-center justify-between" suppressHydrationWarning>
-        <Link href="/" className="font-semibold shrink-0">
+        <Link href="/" className="shrink-0 font-semibold text-primary hover:text-primary/90">
           Niche Tech Job Board
         </Link>
         <HeaderNav user={user} isEmployer={profile?.role === "employer"} />

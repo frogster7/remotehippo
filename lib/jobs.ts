@@ -12,17 +12,18 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
-  if (filters.work_type) {
-    query = query.eq("work_type", filters.work_type);
+  if (filters.work_types?.length) {
+    query = query.in("work_type", filters.work_types);
   }
   if (filters.job_type) {
     query = query.eq("job_type", filters.job_type);
   }
-  if (filters.role?.trim()) {
-    query = query.ilike("role", `%${filters.role.trim()}%`);
+  if (filters.roles?.length) {
+    const orClause = filters.roles.map((r) => `role.ilike.%${r.trim()}%`).filter(Boolean).join(",");
+    if (orClause) query = query.or(orClause);
   }
-  if (filters.tech?.trim()) {
-    query = query.contains("tech_stack", [filters.tech.trim()]);
+  if (filters.tech?.length) {
+    query = query.overlaps("tech_stack", filters.tech);
   }
   if (filters.salary_min != null && filters.salary_min > 0) {
     query = query.gte("salary_max", filters.salary_min); // job's max must be >= filter min
@@ -36,6 +37,9 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   }
   if (filters.eu_timezone_friendly === true) {
     query = query.eq("eu_timezone_friendly", true);
+  }
+  if (filters.location?.trim()) {
+    query = query.ilike("location", `%${filters.location.trim()}%`);
   }
 
   const { data, error } = await query;
@@ -65,6 +69,40 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
     profiles: Job["employer"] | null;
   };
   return { ...rest, employer: profiles ?? undefined } as Job;
+}
+
+/** Recent active jobs with employer info. Used for homepage "recently posted" section. */
+export async function getRecentJobs(limit = 6): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from("jobs")
+    .select(
+      `
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url)
+    `
+    )
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return ((rows ?? []) as unknown[]).map((row) => {
+    const { profiles, ...rest } = row as typeof row & { profiles: Job["employer"] | null };
+    return { ...rest, employer: profiles ?? undefined } as Job;
+  });
+}
+
+/** Count of active jobs. Used for homepage hero. */
+export async function getActiveJobCount(): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 /** All active job slugs (for sitemap). */

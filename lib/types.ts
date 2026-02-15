@@ -50,13 +50,17 @@ export interface JobFormData {
 }
 
 export interface JobFilters {
-  role?: string;
-  work_type?: WorkType;
+  /** Specializations/roles; job role must match any (ilike) */
+  roles?: string[];
+  /** Work types; job must match any (e.g. remote, hybrid) */
+  work_types?: WorkType[];
   job_type?: JobType;
-  tech?: string;
+  /** Technologies; job tech_stack must overlap with any */
+  tech?: string[];
   salary_min?: number;
   salary_max?: number;
   q?: string;
+  location?: string;
   /** When true, only jobs with eu_timezone_friendly = true */
   eu_timezone_friendly?: boolean;
 }

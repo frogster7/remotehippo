@@ -9,6 +9,16 @@ import { formatRelativeTime } from "@/lib/format";
 import type { JobFilters, WorkType, JobType } from "@/lib/types";
 import type { Metadata } from "next";
 
+function getParamArray(
+  searchParams: Record<string, string | string[] | undefined>,
+  k: string
+): string[] {
+  const v = searchParams[k];
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string" && x.trim() !== "");
+  return v.trim() ? [v] : [];
+}
+
 function parseFilters(searchParams: Record<string, string | string[] | undefined>): JobFilters {
   const get = (k: string) => {
     const v = searchParams[k];
@@ -19,27 +29,29 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
   const euOnly = get("eu_timezone_friendly");
   return {
     q: get("q") ?? undefined,
-    role: get("role") ?? undefined,
-    work_type: (get("work_type") as WorkType) ?? undefined,
+    location: get("location") ?? undefined,
+    roles: getParamArray(searchParams, "role"),
+    work_types: getParamArray(searchParams, "work_type") as WorkType[],
     job_type: (get("job_type") as JobType) ?? undefined,
-    tech: get("tech") ?? undefined,
+    tech: getParamArray(searchParams, "tech"),
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
     eu_timezone_friendly: euOnly === "1" || euOnly === "true",
   };
 }
 
-function buildJobsQueryString(params: Record<string, string | string[] | undefined>): string {
-  const entries = Object.entries(params).filter(
-    ([, v]) => v !== undefined && v !== "" && (Array.isArray(v) ? v[0] : v) !== ""
-  );
-  if (entries.length === 0) return "";
-  const search = new URLSearchParams();
-  for (const [k, v] of entries) {
-    const val = Array.isArray(v) ? v[0] : v;
-    if (val != null && val !== "") search.set(k, val);
-  }
-  const qs = search.toString();
+function buildJobsQueryString(filters: JobFilters): string {
+  const p = new URLSearchParams();
+  if (filters.q?.trim()) p.set("q", filters.q.trim());
+  if (filters.location?.trim()) p.set("location", filters.location.trim());
+  filters.roles?.forEach((r) => p.append("role", r));
+  filters.work_types?.forEach((w) => p.append("work_type", w));
+  if (filters.job_type) p.set("job_type", filters.job_type);
+  filters.tech?.forEach((t) => p.append("tech", t));
+  if (filters.salary_min != null && filters.salary_min > 0) p.set("salary_min", String(filters.salary_min));
+  if (filters.salary_max != null && filters.salary_max > 0) p.set("salary_max", String(filters.salary_max));
+  if (filters.eu_timezone_friendly) p.set("eu_timezone_friendly", "1");
+  const qs = p.toString();
   return qs ? `?${qs}` : "";
 }
 
@@ -51,15 +63,16 @@ export async function generateMetadata({
   const params = searchParams != null ? await searchParams : {};
   const filters = parseFilters(params);
   const base = getSiteUrl();
-  const qs = buildJobsQueryString(params);
+  const qs = buildJobsQueryString(filters);
   const canonical = `${base}/jobs${qs}`;
 
   const parts: string[] = [];
   if (filters.eu_timezone_friendly) parts.push("EU timezone only");
-  if (filters.work_type) parts.push(filters.work_type);
+  filters.work_types?.forEach((w) => parts.push(w));
   if (filters.job_type) parts.push(filters.job_type);
-  if (filters.role) parts.push(filters.role);
-  if (filters.tech) parts.push(filters.tech);
+  filters.roles?.forEach((r) => parts.push(r));
+  filters.tech?.forEach((t) => parts.push(t));
+  if (filters.location) parts.push(filters.location);
   if (filters.q) parts.push(`"${filters.q}"`);
   const filterLabel = parts.length > 0 ? ` – ${parts.join(", ")}` : "";
 
@@ -110,41 +123,55 @@ export default async function JobsPage({
   ]);
 
   return (
-    <main className="min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+    <main className="min-h-screen bg-muted/30">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Tech jobs</h1>
           <p className="mt-1 text-muted-foreground">
             Remote-friendly roles · EU timezone · Filter by role, work type and salary
           </p>
         </div>
 
-        <Suspense fallback={<div className="h-24 animate-pulse rounded-lg border bg-muted/30" />}>
-          <JobsFilter roles={filterOptions.roles} techOptions={filterOptions.tech} />
-        </Suspense>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* Left sidebar – filters */}
+          <aside className="w-full shrink-0 lg:w-80">
+            <Suspense fallback={<div className="h-64 animate-pulse rounded-lg border bg-card" />}>
+              <JobsFilter roles={filterOptions.roles} techOptions={filterOptions.tech} />
+            </Suspense>
+          </aside>
 
-        <section className="mt-8 space-y-4">
-          {jobs.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-              <Briefcase className="mx-auto h-12 w-12 opacity-50" aria-hidden />
-              <p className="mt-3 font-medium">No jobs match your filters.</p>
-              <p className="mt-1 text-sm">Try adjusting filters or check back later.</p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {jobs.map((job) => (
-                <li key={job.id}>
-                  <JobCard
-                    job={job}
-                    postedAt={formatRelativeTime(job.created_at)}
-                    isFavorited={favoritedJobIds.has(job.id)}
-                    isLoggedIn={!!user}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          {/* Right – job listings */}
+          <section className="min-w-0 flex-1 space-y-4">
+            {jobs.length === 0 ? (
+              <div className="rounded-lg border border-dashed bg-card p-12 text-center text-muted-foreground">
+                <Briefcase className="mx-auto h-12 w-12 opacity-50" aria-hidden />
+                <p className="mt-3 font-medium">No jobs match your filters.</p>
+                <p className="mt-1 text-sm">Try adjusting filters or check back later.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                  <span>
+                    {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                  </span>
+                  <span>Sorted by newest</span>
+                </div>
+                <ul className="space-y-3">
+                  {jobs.map((job) => (
+                    <li key={job.id}>
+                      <JobCard
+                        job={job}
+                        postedAt={formatRelativeTime(job.created_at)}
+                        isFavorited={favoritedJobIds.has(job.id)}
+                        isLoggedIn={!!user}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );

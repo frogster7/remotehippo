@@ -255,6 +255,35 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Task 10: UI improvements (pracuj.pl inspired)
+
+**What was done:**
+- **Colors:** Updated `app/globals.css` – primary blue (#5B41E1), light lavender background (#F5F6FA), selected filter (#E8E5FB), dark grey text (#4A4A4A). Header logo uses primary color.
+- **Jobs page layout:** Two-column layout – filters in left sidebar (~320px), job listings on right. Filters shown as vertical cards: Active filters (removable tags) + Filters card (search, location, EU checkbox, role, work type, tech, salary). Job count and "Sorted by newest" above listings. Background `bg-muted/30`.
+- **Job cards:** Tech stack as pill-shaped tags (`bg-primary/10`); work type/job type as inline text; salary in green; FavoriteButton in top-right.
+- **Homepage hero:** Split layout – left: headline "Hello World. Hello new job", large blue job count, search bar (position + location + Search button), Specializations & Popular technologies & Work mode tags (multi-select toggles). Right: decorative gradient shapes. Tags add to filters; Search submits all selections.
+- **Recently posted jobs:** New section below hero – horizontal scrollable job cards with company logo, title, company, location, salary (green), posted time. "View all jobs" link. `getRecentJobs(limit)`, `getActiveJobCount()` in `lib/jobs.ts`.
+- **Multi-select filters:** `JobFilters` now uses `roles?: string[]`, `tech?: string[]`, `work_types?: WorkType[]` (arrays). `getJobs()`: roles via `.or('role.ilike.%X%,role.ilike.%Y%')`, tech via `.overlaps('tech_stack', tech)`, work_types via `.in('work_type', work_types)`. URL supports repeated params (`role=Backend&role=Frontend&tech=AWS&tech=Azure&work_type=remote&work_type=hybrid`).
+- **Location filter:** Added `location?: string` to JobFilters; `getJobs()` filters by `location.ilike`. Search bar and sidebar have Location input.
+- **Jobs filter sidebar:** "Add role" and "Add tech" dropdowns (append to arrays); Work type as Remote/Hybrid checkboxes; active filters show one tag per value, each removable via ×.
+- **Home hero components:** `app/_components/home-hero.tsx` (client, multi-select state), `app/_components/recent-jobs.tsx` (server-rendered cards).
+
+**Key files:**
+- `app/globals.css` – color variables.
+- `app/page.tsx` – fetches jobCount, recentJobs, filterOptions; renders HomeHero + RecentJobs.
+- `app/_components/home-hero.tsx` – hero with search form and multi-select tags.
+- `app/_components/recent-jobs.tsx` – horizontal job cards.
+- `app/_components/header.tsx` – logo uses `text-primary`.
+- `app/jobs/page.tsx` – two-column layout, parseFilters/buildJobsQueryString for arrays.
+- `app/jobs/jobs-filter.tsx` – sidebar filters, add role/tech dropdowns, work type checkboxes, per-value remove.
+- `app/jobs/job-card.tsx` – pill tags, inline metadata.
+- `lib/types.ts` – JobFilters with roles, tech, work_types arrays; location.
+- `lib/jobs.ts` – getRecentJobs, getActiveJobCount, getJobs with array filters, location filter.
+
+**Notes:** Hero search and tags build URL with repeated params; jobs page parses via `getParamArray`. Sitemap and metadata updated for array filters.
+
+---
+
 ## Quick reference
 
 | Need to…                    | Look at… |
@@ -274,5 +303,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 | EU timezone filter          | `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` (getJobs), `lib/types.ts` (JobFilters) |
 | Public employer page        | `app/employer/[id]/page.tsx`, `lib/jobs.ts` (getEmployerPublicProfile, getActiveJobsByEmployer) |
 | Job alerts (later)          | See `FUTURE.md` |
+| Homepage hero, recent jobs  | `app/_components/home-hero.tsx`, `app/_components/recent-jobs.tsx`, `app/page.tsx` |
+| Multi-select filters        | `lib/types.ts` (roles, tech, work_types arrays), `lib/jobs.ts` (getJobs), `app/jobs/jobs-filter.tsx` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

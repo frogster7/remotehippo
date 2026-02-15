@@ -1,18 +1,22 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { getRecentJobs, getActiveJobCount, getFilterOptions } from "@/lib/jobs";
+import { HomeHero } from "./_components/home-hero";
+import { RecentJobs } from "./_components/recent-jobs";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [jobCount, recentJobs, filterOptions] = await Promise.all([
+    getActiveJobCount(),
+    getRecentJobs(6),
+    getFilterOptions(),
+  ]);
+
   return (
-    <main className="min-h-screen p-6">
-      <div className="container mx-auto px-4 flex flex-col items-center justify-center min-h-[60vh] text-center" suppressHydrationWarning>
-        <h1 className="text-3xl font-semibold tracking-tight">Niche Tech Job Board</h1>
-        <p className="mt-2 text-muted-foreground max-w-md">
-          Remote-friendly tech jobs · EU timezone · For Balkan developers and companies hiring remote talent
-        </p>
-        <Button asChild className="mt-6">
-          <Link href="/jobs">Browse jobs</Link>
-        </Button>
-      </div>
+    <main className="min-h-screen">
+      <HomeHero
+        jobCount={jobCount}
+        roles={filterOptions.roles}
+        tech={filterOptions.tech}
+      />
+      <RecentJobs jobs={recentJobs} />
     </main>
   );
 }
