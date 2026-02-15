@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Briefcase } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFavoritedJobs } from "@/lib/jobs";
@@ -48,7 +49,8 @@ export default async function SavedJobsPage() {
         {jobs.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground mb-4">
+              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/60" aria-hidden />
+              <p className="text-muted-foreground mt-4 mb-4">
                 Browse jobs and click the heart icon to save them for later.
               </p>
               <Link

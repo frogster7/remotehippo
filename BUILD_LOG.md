@@ -87,6 +87,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 **Key file:** `app/layout.tsx` – `<body className="antialiased" suppressHydrationWarning>`.
 
+**Follow-up (extensions injecting into divs):** Some extensions (e.g. Bitdefender) inject `bis_skin_checked="1"` into container divs. Added `suppressHydrationWarning` to the header inner div (`header.tsx`), home page container (`page.tsx`), and a wrapper div in `layout.tsx` around `<Header />` and `{children}` so hydration warnings from injected attributes are suppressed.
+
 ---
 
 ## Task 5: Public job pages
@@ -182,9 +184,27 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Task 9: Final polish
+
+**What was done:**
+- **Skeleton loaders:** Added shadcn `Skeleton` and `Sheet` components. Created `loading.tsx` for `/jobs` (filter + job card skeletons), `/jobs/[slug]` (detail skeleton), `/employer/dashboard`, and `/saved-jobs` so navigation shows instant loading UI (per §10 UI/UX).
+- **Branding:** Header label updated from "Niche Job Board" to "Niche Tech Job Board" for consistency with metadata and home.
+- **Mobile header:** New client component `app/_components/header-nav.tsx` – desktop nav unchanged (hidden on small screens with `md:flex`), mobile: hamburger button opens a Sheet from the right with the same links. Header (server) passes `user` and `isEmployer` to HeaderNav.
+- **Empty states:** Briefcase icon (lucide-react) added to jobs list empty state ("No jobs match your filters") and saved-jobs empty state for light visual polish.
+
+**Key files:**
+- `components/ui/skeleton.tsx`, `components/ui/sheet.tsx` (shadcn).
+- `app/jobs/loading.tsx`, `app/jobs/[slug]/loading.tsx`, `app/employer/dashboard/loading.tsx`, `app/saved-jobs/loading.tsx`.
+- `app/_components/header.tsx` (branding, HeaderNav), `app/_components/header-nav.tsx` (desktop + mobile menu).
+- `app/jobs/page.tsx`, `app/saved-jobs/page.tsx` (empty-state icon).
+
+**Notes:** No new features; polish only. MVP build plan (§13) complete.
+
+---
+
 ## Not done yet (from PROJECT_BRIEF §13)
 
-- **Task 9:** Final polish.
+- Nothing; Task 9 completes the plan.
 
 ---
 
@@ -228,5 +248,6 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Employer dashboard / CRUD   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts` |
 | Favorites / saved jobs      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
 | SEO (sitemap, robots, meta)  | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata |
+| Loading / polish            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

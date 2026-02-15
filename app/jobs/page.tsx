@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Briefcase } from "lucide-react";
 import { getJobs, getFilterOptions, getFavoritedJobIds } from "@/lib/jobs";
 import { JobsFilter } from "./jobs-filter";
 import { JobCard } from "./job-card";
@@ -121,7 +122,8 @@ export default async function JobsPage({
         <section className="mt-8 space-y-4">
           {jobs.length === 0 ? (
             <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-              <p className="font-medium">No jobs match your filters.</p>
+              <Briefcase className="mx-auto h-12 w-12 opacity-50" aria-hidden />
+              <p className="mt-3 font-medium">No jobs match your filters.</p>
               <p className="mt-1 text-sm">Try adjusting filters or check back later.</p>
             </div>
           ) : (
