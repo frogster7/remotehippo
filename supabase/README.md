@@ -29,3 +29,10 @@ This creates:
 - RLS policies as per PROJECT_BRIEF §7
 
 (Optional: if you use the Supabase CLI, run `supabase db push` from the project root.)
+
+## 4. Auth redirect URL (for email confirmation / OAuth)
+
+In **Authentication → URL Configuration**, add to **Redirect URLs**:
+
+- `http://localhost:3000/auth/callback` (development)
+- Your production URL, e.g. `https://yourdomain.com/auth/callback`
