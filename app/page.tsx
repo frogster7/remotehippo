@@ -1,12 +1,19 @@
-import { getRecentJobs, getActiveJobCount, getFilterOptions } from "@/lib/jobs";
+import {
+  getRecentJobs,
+  getActiveJobCount,
+  getFilterOptions,
+  getEmployersForHomepage,
+} from "@/lib/jobs";
 import { HomeHero } from "./_components/home-hero";
 import { RecentJobs } from "./_components/recent-jobs";
+import { CompaniesWorthKnowing } from "./_components/companies-worth-knowing";
 
 export default async function HomePage() {
-  const [jobCount, recentJobs, filterOptions] = await Promise.all([
+  const [jobCount, recentJobs, filterOptions, employers] = await Promise.all([
     getActiveJobCount(),
     getRecentJobs(6),
     getFilterOptions(),
+    getEmployersForHomepage(8),
   ]);
 
   return (
@@ -17,6 +24,7 @@ export default async function HomePage() {
         tech={filterOptions.tech}
       />
       <RecentJobs jobs={recentJobs} />
+      <CompaniesWorthKnowing employers={employers} />
     </main>
   );
 }

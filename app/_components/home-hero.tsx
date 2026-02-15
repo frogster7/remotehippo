@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import type { WorkType } from "@/lib/types";
+import type { WorkType, JobType } from "@/lib/types";
+import { JOB_TYPES } from "@/lib/types";
 
 interface HomeHeroProps {
   jobCount: number;
@@ -20,33 +27,56 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
   const [selectedWorkTypes, setSelectedWorkTypes] = useState<WorkType[]>([]);
+  const [workTime, setWorkTime] = useState<JobType | "">("");
+  const [location, setLocation] = useState<string>("");
 
   const toggleRole = (r: string) => {
-    setSelectedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+    setSelectedRoles((prev) =>
+      prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
+    );
   };
   const toggleTech = (t: string) => {
-    setSelectedTech((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+    setSelectedTech((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+    );
   };
   const toggleWorkType = (w: WorkType) => {
-    setSelectedWorkTypes((prev) => (prev.includes(w) ? prev.filter((x) => x !== w) : [...prev, w]));
+    setSelectedWorkTypes((prev) =>
+      prev.includes(w) ? prev.filter((x) => x !== w) : [...prev, w],
+    );
   };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const q = (form.elements.namedItem("q") as HTMLInputElement)?.value?.trim();
-    const location = (form.elements.namedItem("location") as HTMLInputElement)?.value?.trim();
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (location) params.set("location", location);
     selectedRoles.forEach((r) => params.append("role", r));
     selectedTech.forEach((t) => params.append("tech", t));
     selectedWorkTypes.forEach((w) => params.append("work_type", w));
+    if (workTime) params.set("job_type", workTime);
     router.push(`/jobs${params.toString() ? `?${params}` : ""}`);
   };
 
-  const specializationRoles = roles.length > 0 ? roles : ["Backend", "Frontend", "Full-stack", "DevOps", "Data"];
-  const popularTech = tech.length > 0 ? tech.slice(0, 12) : ["JavaScript", "TypeScript", "React", "Node.js", "Python", "SQL", "Go", "Rust"];
+  const specializationRoles =
+    roles.length > 0
+      ? roles
+      : ["Backend", "Frontend", "Full-stack", "DevOps", "Data"];
+  const popularTech =
+    tech.length > 0
+      ? tech.slice(0, 12)
+      : [
+          "JavaScript",
+          "TypeScript",
+          "React",
+          "Node.js",
+          "Python",
+          "SQL",
+          "Go",
+          "Rust",
+        ];
 
   return (
     <section className="py-8 md:py-12 lg:py-16">
@@ -66,27 +96,76 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
 
             {/* Search bar */}
             <form onSubmit={handleSearch} className="mt-6">
-              <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row">
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:flex-wrap">
                 <Input
                   name="q"
                   placeholder="Position, company, keyword"
-                  className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+                  className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-w-[140px]"
                 />
-                <Input
-                  name="location"
-                  placeholder="Location"
-                  className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 sm:max-w-[180px]"
-                />
-                <Button type="submit" size="lg" className="gap-2 rounded-lg px-6">
+                <Select value={location || "__any__"} onValueChange={(v) => setLocation(v === "__any__" ? "" : v)}>
+                  <SelectTrigger className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus:ring-0 sm:max-w-[180px]">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent className="min-w-[180px] rounded-lg border bg-popover shadow-lg">
+                    <SelectItem value="__any__" className="cursor-pointer py-2.5">
+                      Any location
+                    </SelectItem>
+                    <SelectItem value="Remote" className="cursor-pointer py-2.5">
+                      Remote
+                    </SelectItem>
+                    <SelectItem value="Berlin" className="cursor-pointer py-2.5">
+                      Berlin
+                    </SelectItem>
+                    <SelectItem value="London" className="cursor-pointer py-2.5">
+                      London
+                    </SelectItem>
+                    <SelectItem value="Amsterdam" className="cursor-pointer py-2.5">
+                      Amsterdam
+                    </SelectItem>
+                    <SelectItem value="New York" className="cursor-pointer py-2.5">
+                      New York
+                    </SelectItem>
+                    <SelectItem value="San Francisco" className="cursor-pointer py-2.5">
+                      San Francisco
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="gap-2 rounded-lg px-6"
+                >
                   <Search className="h-5 w-5" aria-hidden />
                   Search
                 </Button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <Select
+                  value={workTime || "__any__"}
+                  onValueChange={(v) =>
+                    setWorkTime(v === "__any__" ? "" : (v as JobType))
+                  }
+                >
+                  <SelectTrigger className="h-9 w-[160px] rounded-lg border border-input bg-background">
+                    <SelectValue placeholder="Work time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__any__">Work time</SelectItem>
+                    {JOB_TYPES.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </form>
 
             {/* Specializations & Popular technologies card */}
             <div className="mt-6 rounded-xl border bg-card p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-[#4A4A4A]">Specializations</h3>
+              <h3 className="text-sm font-semibold text-[#4A4A4A]">
+                Specializations
+              </h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {specializationRoles.map((r) => {
                   const isSelected = selectedRoles.includes(r);
@@ -98,8 +177,8 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                       className={cn(
                         "rounded-lg border px-3 py-1.5 text-sm transition-colors",
                         isSelected
-                          ? "border-primary/30 bg-[#E8E5FB] text-primary"
-                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-[#E8E5FB] hover:text-primary"
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
                       )}
                     >
                       {r}
@@ -107,7 +186,9 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </div>
-              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">Popular technologies</h3>
+              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
+                Popular technologies
+              </h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {popularTech.map((t) => {
                   const isSelected = selectedTech.includes(t);
@@ -119,8 +200,8 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                       className={cn(
                         "rounded-lg border px-3 py-1.5 text-sm transition-colors",
                         isSelected
-                          ? "border-primary/30 bg-[#E8E5FB] text-primary"
-                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-[#E8E5FB] hover:text-primary"
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
                       )}
                     >
                       {t}
@@ -128,7 +209,9 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </div>
-              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">Work mode</h3>
+              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
+                Work mode
+              </h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(["remote", "hybrid"] as const).map((w) => {
                   const isSelected = selectedWorkTypes.includes(w);
@@ -140,8 +223,8 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                       className={cn(
                         "rounded-lg border px-3 py-1.5 text-sm transition-colors capitalize",
                         isSelected
-                          ? "border-primary/30 bg-[#E8E5FB] text-primary"
-                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-[#E8E5FB] hover:text-primary"
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-muted/50 text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
                       )}
                     >
                       {w}
@@ -149,16 +232,6 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Additional filter links */}
-            <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted-foreground">
-              <Link href="/jobs?job_type=full-time" className="hover:text-primary hover:underline">
-                Full-time
-              </Link>
-              <Link href="/jobs?job_type=contract" className="hover:text-primary hover:underline">
-                Contract
-              </Link>
             </div>
           </div>
 

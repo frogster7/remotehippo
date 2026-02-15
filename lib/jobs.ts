@@ -7,7 +7,7 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   let query = supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
     )
     .eq("is_active", true)
     .order("created_at", { ascending: false });
@@ -19,7 +19,10 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
     query = query.eq("job_type", filters.job_type);
   }
   if (filters.roles?.length) {
-    const orClause = filters.roles.map((r) => `role.ilike.%${r.trim()}%`).filter(Boolean).join(",");
+    const orClause = filters.roles
+      .map((r) => `role.ilike.%${r.trim()}%`)
+      .filter(Boolean)
+      .join(",");
     if (orClause) query = query.or(orClause);
   }
   if (filters.tech?.length) {
@@ -34,9 +37,6 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   if (filters.q?.trim()) {
     const q = `%${filters.q.trim()}%`;
     query = query.or(`title.ilike.${q},description.ilike.${q},role.ilike.${q}`);
-  }
-  if (filters.eu_timezone_friendly === true) {
-    query = query.eq("eu_timezone_friendly", true);
   }
   if (filters.location?.trim()) {
     query = query.ilike("location", `%${filters.location.trim()}%`);
@@ -55,7 +55,9 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
     .select(
       `
       id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
-      salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+      created_at, updated_at,
       profiles(id, full_name, company_name, company_website, company_logo_url)
     `,
     )
@@ -79,9 +81,11 @@ export async function getRecentJobs(limit = 6): Promise<Job[]> {
     .select(
       `
       id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
-      salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+      created_at, updated_at,
       profiles(id, full_name, company_name, company_website, company_logo_url)
-    `
+    `,
     )
     .eq("is_active", true)
     .order("created_at", { ascending: false })
@@ -89,7 +93,9 @@ export async function getRecentJobs(limit = 6): Promise<Job[]> {
 
   if (error) throw error;
   return ((rows ?? []) as unknown[]).map((row) => {
-    const { profiles, ...rest } = row as typeof row & { profiles: Job["employer"] | null };
+    const { profiles, ...rest } = row as typeof row & {
+      profiles: Job["employer"] | null;
+    };
     return { ...rest, employer: profiles ?? undefined } as Job;
   });
 }
@@ -126,6 +132,52 @@ export async function getEmployerIdsWithActiveJobs(): Promise<string[]> {
   if (error) throw error;
   const ids = [...new Set((data ?? []).map((row) => row.employer_id))];
   return ids;
+}
+
+/** Employers worth knowing: recent employers with active jobs (for homepage). */
+export async function getEmployersForHomepage(
+  limit = 8,
+): Promise<
+  {
+    id: string;
+    company_name: string | null;
+    full_name: string | null;
+    company_website: string | null;
+    company_logo_url: string | null;
+  }[]
+> {
+  const supabase = await createClient();
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("employer_id")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+  if (jobsError || !jobs?.length) return [];
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const row of jobs) {
+    if (ids.length >= limit) break;
+    if (!seen.has(row.employer_id)) {
+      seen.add(row.employer_id);
+      ids.push(row.employer_id);
+    }
+  }
+  if (ids.length === 0) return [];
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, company_name, full_name, company_website, company_logo_url")
+    .in("id", ids);
+  if (profilesError || !profiles?.length) return [];
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return [...profiles].sort(
+    (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
+  ) as {
+    id: string;
+    company_name: string | null;
+    full_name: string | null;
+    company_website: string | null;
+    company_logo_url: string | null;
+  }[];
 }
 
 /** All distinct roles and tech_stack values for filter dropdowns (optional). */
@@ -201,7 +253,7 @@ export async function getActiveJobsByEmployer(
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
     )
     .eq("employer_id", employerId)
     .eq("is_active", true)
@@ -216,7 +268,7 @@ export async function getEmployerJobs(employerId: string): Promise<Job[]> {
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
     )
     .eq("employer_id", employerId)
     .order("created_at", { ascending: false });
@@ -230,7 +282,7 @@ export async function getJobByIdForEdit(jobId: string): Promise<Job | null> {
   const { data: row, error } = await supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
     )
     .eq("id", jobId)
     .single();
@@ -264,7 +316,9 @@ export async function getFavoritedJobs(userId: string): Promise<Job[]> {
       job_id,
       jobs (
         id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
-        salary_min, salary_max, location, eu_timezone_friendly, is_active, application_email, application_url, closed_at, created_at, updated_at,
+        salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+        created_at, updated_at,
         profiles(id, full_name, company_name, company_website, company_logo_url)
       )
     `,

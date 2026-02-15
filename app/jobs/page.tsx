@@ -26,7 +26,6 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
   };
   const salaryMin = get("salary_min");
   const salaryMax = get("salary_max");
-  const euOnly = get("eu_timezone_friendly");
   return {
     q: get("q") ?? undefined,
     location: get("location") ?? undefined,
@@ -36,7 +35,6 @@ function parseFilters(searchParams: Record<string, string | string[] | undefined
     tech: getParamArray(searchParams, "tech"),
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
-    eu_timezone_friendly: euOnly === "1" || euOnly === "true",
   };
 }
 
@@ -50,7 +48,6 @@ function buildJobsQueryString(filters: JobFilters): string {
   filters.tech?.forEach((t) => p.append("tech", t));
   if (filters.salary_min != null && filters.salary_min > 0) p.set("salary_min", String(filters.salary_min));
   if (filters.salary_max != null && filters.salary_max > 0) p.set("salary_max", String(filters.salary_max));
-  if (filters.eu_timezone_friendly) p.set("eu_timezone_friendly", "1");
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }
@@ -67,7 +64,6 @@ export async function generateMetadata({
   const canonical = `${base}/jobs${qs}`;
 
   const parts: string[] = [];
-  if (filters.eu_timezone_friendly) parts.push("EU timezone only");
   filters.work_types?.forEach((w) => parts.push(w));
   if (filters.job_type) parts.push(filters.job_type);
   filters.roles?.forEach((r) => parts.push(r));
@@ -79,8 +75,8 @@ export async function generateMetadata({
   const title = `Jobs${filterLabel}`;
   const description =
     parts.length > 0
-      ? `Remote-friendly tech jobs: ${parts.join(", ")}. EU timezone. Filter by role, work type, salary and more.`
-      : "Browse remote-friendly tech jobs. Filter by role, work type, job type, tech stack and salary. EU timezone.";
+      ? `Remote-friendly tech jobs: ${parts.join(", ")}. Filter by role, work type, salary and more.`
+      : "Browse remote-friendly tech jobs. Filter by role, work type, job type, tech stack and salary.";
 
   return {
     title,
@@ -128,7 +124,7 @@ export default async function JobsPage({
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Tech jobs</h1>
           <p className="mt-1 text-muted-foreground">
-            Remote-friendly roles · EU timezone · Filter by role, work type and salary
+            Remote-friendly roles · Filter by role, work type and salary
           </p>
         </div>
 

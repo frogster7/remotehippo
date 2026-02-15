@@ -26,6 +26,7 @@ async function ensureEmployer() {
 }
 
 export async function createJob(form: JobFormData): Promise<{ error?: string }> {
+  if (!form.summary?.trim()) return { error: "Summary is required." };
   const { supabase, userId } = await ensureEmployer();
   const slug = generateJobSlug(form.title.trim() || "job");
   const { error } = await supabase.from("jobs").insert({
@@ -40,10 +41,15 @@ export async function createJob(form: JobFormData): Promise<{ error?: string }> 
     salary_min: form.salary_min && form.salary_min > 0 ? form.salary_min : null,
     salary_max: form.salary_max && form.salary_max > 0 ? form.salary_max : null,
     location: form.location?.trim() || null,
-    eu_timezone_friendly: form.eu_timezone_friendly,
     is_active: form.is_active,
     application_email: form.application_email?.trim() || null,
     application_url: form.application_url?.trim() || null,
+    summary: form.summary?.trim() || null,
+    responsibilities: form.responsibilities?.trim() || null,
+    requirements: form.requirements?.trim() || null,
+    what_we_offer: form.what_we_offer?.trim() || null,
+    good_to_have: form.good_to_have?.trim() || null,
+    benefits: form.benefits?.trim() || null,
   });
   if (error) return { error: error.message };
   revalidatePath("/employer/dashboard");
@@ -55,6 +61,7 @@ export async function updateJob(
   jobId: string,
   form: JobFormData
 ): Promise<{ error?: string }> {
+  if (!form.summary?.trim()) return { error: "Summary is required." };
   const { supabase } = await ensureEmployer();
   const { data: job } = await supabase
     .from("jobs")
@@ -73,10 +80,15 @@ export async function updateJob(
       salary_min: form.salary_min && form.salary_min > 0 ? form.salary_min : null,
       salary_max: form.salary_max && form.salary_max > 0 ? form.salary_max : null,
       location: form.location?.trim() || null,
-      eu_timezone_friendly: form.eu_timezone_friendly,
       is_active: form.is_active,
       application_email: form.application_email?.trim() || null,
       application_url: form.application_url?.trim() || null,
+      summary: form.summary?.trim() || null,
+      responsibilities: form.responsibilities?.trim() || null,
+      requirements: form.requirements?.trim() || null,
+      what_we_offer: form.what_we_offer?.trim() || null,
+      good_to_have: form.good_to_have?.trim() || null,
+      benefits: form.benefits?.trim() || null,
     })
     .eq("id", jobId);
   if (error) return { error: error.message };

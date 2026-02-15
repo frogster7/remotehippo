@@ -19,10 +19,11 @@ import type { JobFilters, WorkType } from "@/lib/types";
 function getFiltersFromSearchParams(sp: URLSearchParams): Partial<JobFilters> {
   const salaryMin = sp.get("salary_min");
   const salaryMax = sp.get("salary_max");
-  const euOnly = sp.get("eu_timezone_friendly");
   const roles = sp.getAll("role").filter(Boolean);
   const tech = sp.getAll("tech").filter(Boolean);
-  const workTypes = sp.getAll("work_type").filter((w): w is WorkType => w === "remote" || w === "hybrid");
+  const workTypes = sp
+    .getAll("work_type")
+    .filter((w): w is WorkType => w === "remote" || w === "hybrid");
   return {
     q: sp.get("q") ?? undefined,
     location: sp.get("location") ?? undefined,
@@ -32,7 +33,6 @@ function getFiltersFromSearchParams(sp: URLSearchParams): Partial<JobFilters> {
     tech: tech.length ? tech : undefined,
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
-    eu_timezone_friendly: euOnly === "1" || euOnly === "true",
   };
 }
 
@@ -44,27 +44,48 @@ function filtersToParams(f: Partial<JobFilters>): URLSearchParams {
   f.work_types?.forEach((w) => p.append("work_type", w));
   if (f.job_type) p.set("job_type", f.job_type);
   f.tech?.forEach((t) => p.append("tech", t));
-  if (f.salary_min != null && f.salary_min > 0) p.set("salary_min", String(f.salary_min));
-  if (f.salary_max != null && f.salary_max > 0) p.set("salary_max", String(f.salary_max));
-  if (f.eu_timezone_friendly) p.set("eu_timezone_friendly", "1");
+  if (f.salary_min != null && f.salary_min > 0)
+    p.set("salary_min", String(f.salary_min));
+  if (f.salary_max != null && f.salary_max > 0)
+    p.set("salary_max", String(f.salary_max));
   return p;
 }
 
-type ActiveFilterItem = { key: keyof JobFilters; label: string; value?: string };
+type ActiveFilterItem = {
+  key: keyof JobFilters;
+  label: string;
+  value?: string;
+};
 
-function getActiveFilterLabels(filters: Partial<JobFilters>): ActiveFilterItem[] {
+function getActiveFilterLabels(
+  filters: Partial<JobFilters>,
+): ActiveFilterItem[] {
   const items: ActiveFilterItem[] = [];
-  if (filters.q?.trim()) items.push({ key: "q", label: `Search: "${filters.q}"` });
-  filters.roles?.forEach((r) => items.push({ key: "roles", label: `Role: ${r}`, value: r }));
-  if (filters.location?.trim()) items.push({ key: "location", label: `Location: ${filters.location}` });
-  filters.work_types?.forEach((w) => items.push({ key: "work_types", label: `Work: ${w}`, value: w }));
-  if (filters.job_type) items.push({ key: "job_type", label: `Type: ${filters.job_type}` });
-  filters.tech?.forEach((t) => items.push({ key: "tech", label: `Tech: ${t}`, value: t }));
-  if (filters.eu_timezone_friendly) items.push({ key: "eu_timezone_friendly", label: "EU timezone only" });
+  if (filters.q?.trim())
+    items.push({ key: "q", label: `Search: "${filters.q}"` });
+  filters.roles?.forEach((r) =>
+    items.push({ key: "roles", label: `Role: ${r}`, value: r }),
+  );
+  if (filters.location?.trim())
+    items.push({ key: "location", label: `Location: ${filters.location}` });
+  filters.work_types?.forEach((w) =>
+    items.push({ key: "work_types", label: `Work: ${w}`, value: w }),
+  );
+  if (filters.job_type)
+    items.push({ key: "job_type", label: `Work time: ${filters.job_type}` });
+  filters.tech?.forEach((t) =>
+    items.push({ key: "tech", label: `Tech: ${t}`, value: t }),
+  );
   if (filters.salary_min != null && filters.salary_min > 0)
-    items.push({ key: "salary_min", label: `Min salary: ${(filters.salary_min / 1000).toFixed(0)}k` });
+    items.push({
+      key: "salary_min",
+      label: `Min salary: ${(filters.salary_min / 1000).toFixed(0)}k`,
+    });
   if (filters.salary_max != null && filters.salary_max > 0)
-    items.push({ key: "salary_max", label: `Max salary: ${(filters.salary_max / 1000).toFixed(0)}k` });
+    items.push({
+      key: "salary_max",
+      label: `Max salary: ${(filters.salary_max / 1000).toFixed(0)}k`,
+    });
   return items;
 }
 
@@ -87,7 +108,7 @@ export function JobsFilter({
       const query = params.toString();
       router.push(query ? `/jobs?${query}` : "/jobs");
     },
-    [filters, router]
+    [filters, router],
   );
 
   const clearFilters = useCallback(() => {
@@ -97,9 +118,10 @@ export function JobsFilter({
   const removeFilter = useCallback(
     (key: keyof JobFilters, value?: string) => {
       const next = { ...filters };
-      if (key === "eu_timezone_friendly") {
-        next.eu_timezone_friendly = false;
-      } else if (value !== undefined && (key === "roles" || key === "tech" || key === "work_types")) {
+      if (
+        value !== undefined &&
+        (key === "roles" || key === "tech" || key === "work_types")
+      ) {
         const prev = next[key] as string[] | undefined;
         const arr = prev?.filter((v) => v !== value);
         if (key === "work_types") {
@@ -116,18 +138,20 @@ export function JobsFilter({
       const query = params.toString();
       router.push(query ? `/jobs?${query}` : "/jobs");
     },
-    [filters, router]
+    [filters, router],
   );
 
   return (
     <div className="space-y-4">
       {/* Active filters card */}
-      {(activeFilters.length > 0) && (
+      {activeFilters.length > 0 && (
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" aria-hidden />
-              <span className="text-sm font-medium">Active filters ({activeFilters.length})</span>
+              <span className="text-sm font-medium">
+                Active filters ({activeFilters.length})
+              </span>
             </div>
             <Button
               type="button"
@@ -167,7 +191,10 @@ export function JobsFilter({
         <div className="space-y-4">
           {/* Search */}
           <div>
-            <label htmlFor="search" className="mb-1 block text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="search"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
+            >
               Search
             </label>
             <Input
@@ -176,7 +203,8 @@ export function JobsFilter({
               defaultValue={filters.q}
               onBlur={(e) => {
                 const v = e.target.value.trim();
-                if (v !== (filters.q ?? "")) updateFilters({ q: v || undefined });
+                if (v !== (filters.q ?? ""))
+                  updateFilters({ q: v || undefined });
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
@@ -186,7 +214,10 @@ export function JobsFilter({
 
           {/* Location */}
           <div>
-            <label htmlFor="location" className="mb-1 block text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="location"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
+            >
               Location
             </label>
             <Input
@@ -195,7 +226,8 @@ export function JobsFilter({
               defaultValue={filters.location}
               onBlur={(e) => {
                 const v = e.target.value.trim();
-                if (v !== (filters.location ?? "")) updateFilters({ location: v || undefined });
+                if (v !== (filters.location ?? ""))
+                  updateFilters({ location: v || undefined });
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
@@ -203,26 +235,11 @@ export function JobsFilter({
             />
           </div>
 
-          {/* EU timezone */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="eu_only"
-              checked={!!filters.eu_timezone_friendly}
-              onCheckedChange={(checked) =>
-                updateFilters({ eu_timezone_friendly: !!checked })
-              }
-            />
-            <label
-              htmlFor="eu_only"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-            >
-              EU timezone only
-            </label>
-          </div>
-
           {/* Role */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Role
+            </label>
             <Select
               value="add"
               onValueChange={(v) => {
@@ -236,18 +253,22 @@ export function JobsFilter({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="add">Add role…</SelectItem>
-                {roles.filter((r) => !filters.roles?.includes(r)).map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
+                {roles
+                  .filter((r) => !filters.roles?.includes(r))
+                  .map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           {/* Work type */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Work type</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Work type
+            </label>
             <div className="flex flex-wrap gap-3">
               {WORK_TYPES.map(({ value: w, label }) => {
                 const checked = filters.work_types?.includes(w) ?? false;
@@ -260,7 +281,9 @@ export function JobsFilter({
                         const next = checked
                           ? [...(filters.work_types ?? []), w]
                           : (filters.work_types ?? []).filter((x) => x !== w);
-                        updateFilters({ work_types: next.length ? next : undefined });
+                        updateFilters({
+                          work_types: next.length ? next : undefined,
+                        });
                       }}
                     />
                     <label
@@ -275,13 +298,18 @@ export function JobsFilter({
             </div>
           </div>
 
-          {/* Job type */}
+          {/* Work time */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Job type</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Work time
+            </label>
             <Select
               value={filters.job_type ?? "all"}
               onValueChange={(v) =>
-                updateFilters({ job_type: v === "all" ? undefined : (v as JobFilters["job_type"]) })
+                updateFilters({
+                  job_type:
+                    v === "all" ? undefined : (v as JobFilters["job_type"]),
+                })
               }
             >
               <SelectTrigger>
@@ -300,7 +328,9 @@ export function JobsFilter({
 
           {/* Tech */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Tech</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Tech
+            </label>
             <Select
               value="add"
               onValueChange={(v) => {
@@ -314,37 +344,55 @@ export function JobsFilter({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="add">Add tech…</SelectItem>
-                {techOptions.filter((t) => !filters.tech?.includes(t)).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
+                {techOptions
+                  .filter((t) => !filters.tech?.includes(t))
+                  .map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           {/* Salary */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Salary (k)</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Salary (k)
+            </label>
             <div className="flex gap-2">
               <Input
                 type="number"
                 min={0}
                 placeholder="Min"
-                defaultValue={filters.salary_min ? (filters.salary_min / 1000).toString() : ""}
+                defaultValue={
+                  filters.salary_min
+                    ? (filters.salary_min / 1000).toString()
+                    : ""
+                }
                 onBlur={(e) => {
                   const n = parseInt(e.target.value, 10);
-                  updateFilters({ salary_min: Number.isFinite(n) && n > 0 ? n * 1000 : undefined });
+                  updateFilters({
+                    salary_min:
+                      Number.isFinite(n) && n > 0 ? n * 1000 : undefined,
+                  });
                 }}
               />
               <Input
                 type="number"
                 min={0}
                 placeholder="Max"
-                defaultValue={filters.salary_max ? (filters.salary_max / 1000).toString() : ""}
+                defaultValue={
+                  filters.salary_max
+                    ? (filters.salary_max / 1000).toString()
+                    : ""
+                }
                 onBlur={(e) => {
                   const n = parseInt(e.target.value, 10);
-                  updateFilters({ salary_max: Number.isFinite(n) && n > 0 ? n * 1000 : undefined });
+                  updateFilters({
+                    salary_max:
+                      Number.isFinite(n) && n > 0 ? n * 1000 : undefined,
+                  });
                 }}
               />
             </div>

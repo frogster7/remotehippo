@@ -42,12 +42,6 @@ export function JobCard({ job, postedAt, isFavorited, isLoggedIn }: JobCardProps
           <span>{job.work_type}</span>
           <span aria-hidden>·</span>
           <span>{job.job_type}</span>
-          {job.eu_timezone_friendly && (
-            <>
-              <span aria-hidden>·</span>
-              <span>EU-friendly</span>
-            </>
-          )}
           {job.closed_at && (
             <>
               <span aria-hidden>·</span>

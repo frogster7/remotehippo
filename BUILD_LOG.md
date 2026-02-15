@@ -284,6 +284,26 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Homepage UX updates (post Task 10)
+
+**What was done:**
+- **Work time dropdown:** Moved outside the main search bar container into its own row below; styled as a standalone control.
+- **Location dropdown:** Replaced plain input with a Select dropdown; options include Any location, Remote, Berlin, London, Amsterdam, New York, San Francisco. Styled with `rounded-lg`, `shadow-lg` for a cleaner look.
+- **Recently posted jobs & Companies worth knowing:** Scrollbars hidden via `.scrollbar-hide` utility; horizontal drag-to-scroll enabled (no visible scrollbar, users drag left/right). `lib/use-drag-scroll.ts` hook handles mousedown/move/up and prevents link navigation when dragging.
+- **Primary color:** Switched from purple (#5B41E1) to #4855c6 (`hsl(234, 52%, 53%)`) in `app/globals.css` for both light and dark themes. Secondary, accent, and ring updated accordingly. Replaced hardcoded `#E8E5FB` with `bg-primary/10` where applicable.
+
+**Key files:**
+- `app/_components/home-hero.tsx` – Work time moved out, Location Select, `bg-primary/10`.
+- `app/_components/recent-jobs.tsx` – `useDragScroll`, `scrollbar-hide`, `cursor-grab`.
+- `app/_components/companies-worth-knowing.tsx` – new section, same drag/scrollbar behavior.
+- `lib/use-drag-scroll.ts` – drag-to-scroll hook with `onClickCapture` to block link clicks during drag.
+- `app/globals.css` – primary 234 52% 53%, `scrollbar-hide` utility.
+- `app/jobs/[slug]/page.tsx` – `bg-primary/10` for tags.
+
+**Notes:** Companies worth knowing uses `getEmployersForHomepage()` from `lib/jobs.ts`. Chevron buttons still work for scroll navigation.
+
+---
+
 ## Quick reference
 
 | Need to…                    | Look at… |
@@ -303,7 +323,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 | EU timezone filter          | `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` (getJobs), `lib/types.ts` (JobFilters) |
 | Public employer page        | `app/employer/[id]/page.tsx`, `lib/jobs.ts` (getEmployerPublicProfile, getActiveJobsByEmployer) |
 | Job alerts (later)          | See `FUTURE.md` |
-| Homepage hero, recent jobs  | `app/_components/home-hero.tsx`, `app/_components/recent-jobs.tsx`, `app/page.tsx` |
+| Homepage hero, recent jobs, companies | `app/_components/home-hero.tsx`, `app/_components/recent-jobs.tsx`, `app/_components/companies-worth-knowing.tsx`, `app/page.tsx`, `lib/use-drag-scroll.ts` |
 | Multi-select filters        | `lib/types.ts` (roles, tech, work_types arrays), `lib/jobs.ts` (getJobs), `app/jobs/jobs-filter.tsx` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

@@ -36,7 +36,10 @@ function techStackToString(arr: string[]): string {
 type Props = {
   job?: Job | null;
   createAction?: (form: JobFormData) => Promise<{ error?: string }>;
-  updateAction?: (jobId: string, form: JobFormData) => Promise<{ error?: string }>;
+  updateAction?: (
+    jobId: string,
+    form: JobFormData,
+  ) => Promise<{ error?: string }>;
   deleteAction?: (jobId: string) => Promise<{ error?: string }>;
 };
 
@@ -55,31 +58,36 @@ export function JobForm({
   const [description, setDescription] = useState(job?.description ?? "");
   const [role, setRole] = useState(job?.role ?? "");
   const [workType, setWorkType] = useState<JobFormData["work_type"]>(
-    job?.work_type ?? "remote"
+    job?.work_type ?? "remote",
   );
   const [jobType, setJobType] = useState<JobFormData["job_type"]>(
-    job?.job_type ?? "full-time"
+    job?.job_type ?? "full-time",
   );
   const [techStackStr, setTechStackStr] = useState(
-    techStackToString(job?.tech_stack ?? [])
+    techStackToString(job?.tech_stack ?? []),
   );
   const [salaryMin, setSalaryMin] = useState(
-    job?.salary_min != null ? String(job.salary_min) : ""
+    job?.salary_min != null ? String(job.salary_min) : "",
   );
   const [salaryMax, setSalaryMax] = useState(
-    job?.salary_max != null ? String(job.salary_max) : ""
+    job?.salary_max != null ? String(job.salary_max) : "",
   );
   const [location, setLocation] = useState(job?.location ?? "");
   const [applicationEmail, setApplicationEmail] = useState(
-    job?.application_email ?? ""
+    job?.application_email ?? "",
   );
   const [applicationUrl, setApplicationUrl] = useState(
-    job?.application_url ?? ""
-  );
-  const [euFriendly, setEuFriendly] = useState(
-    job?.eu_timezone_friendly ?? true
+    job?.application_url ?? "",
   );
   const [isActive, setIsActive] = useState(job?.is_active ?? true);
+  const [summary, setSummary] = useState(job?.summary ?? "");
+  const [responsibilities, setResponsibilities] = useState(
+    job?.responsibilities ?? "",
+  );
+  const [requirements, setRequirements] = useState(job?.requirements ?? "");
+  const [whatWeOffer, setWhatWeOffer] = useState(job?.what_we_offer ?? "");
+  const [goodToHave, setGoodToHave] = useState(job?.good_to_have ?? "");
+  const [benefits, setBenefits] = useState(job?.benefits ?? "");
 
   function buildForm(): JobFormData {
     return {
@@ -92,10 +100,15 @@ export function JobForm({
       salary_min: salaryMin ? parseInt(salaryMin, 10) : null,
       salary_max: salaryMax ? parseInt(salaryMax, 10) : null,
       location: location.trim() || null,
-      eu_timezone_friendly: euFriendly,
       is_active: isActive,
       application_email: applicationEmail.trim() || null,
       application_url: applicationUrl.trim() || null,
+      summary: summary.trim() || null,
+      responsibilities: responsibilities.trim() || null,
+      requirements: requirements.trim() || null,
+      what_we_offer: whatWeOffer.trim() || null,
+      good_to_have: goodToHave.trim() || null,
+      benefits: benefits.trim() || null,
     };
   }
 
@@ -104,11 +117,12 @@ export function JobForm({
     setError(null);
     setLoading(true);
     const form = buildForm();
-    const result = isEdit && updateAction
-      ? await updateAction(job!.id, form)
-      : createAction
-        ? await createAction(form)
-        : { error: "No action available" };
+    const result =
+      isEdit && updateAction
+        ? await updateAction(job!.id, form)
+        : createAction
+          ? await createAction(form)
+          : { error: "No action available" };
     setLoading(false);
     if (result?.error) setError(result.error);
   }
@@ -166,23 +180,97 @@ export function JobForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">Description (optional)</Label>
             <textarea
               id="description"
               className="flex min-h-[160px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the role, requirements, and how to apply..."
-              required
+              placeholder="Additional details, how to apply, etc."
               disabled={loading}
             />
+          </div>
+          <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Structured sections (shown as cards on the job page). One point
+              per line for lists.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="summary">Summary *</Label>
+              <textarea
+                id="summary"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="Short offer summary (e.g. one paragraph or bullet points)"
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="responsibilities">Responsibilities</Label>
+              <textarea
+                id="responsibilities"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={responsibilities}
+                onChange={(e) => setResponsibilities(e.target.value)}
+                placeholder="One responsibility per line"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="requirements">Requirements</Label>
+              <textarea
+                id="requirements"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={requirements}
+                onChange={(e) => setRequirements(e.target.value)}
+                placeholder="One requirement per line"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="what_we_offer">What we offer</Label>
+              <textarea
+                id="what_we_offer"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={whatWeOffer}
+                onChange={(e) => setWhatWeOffer(e.target.value)}
+                placeholder="One item per line"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="good_to_have">Good to have (optional)</Label>
+              <textarea
+                id="good_to_have"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={goodToHave}
+                onChange={(e) => setGoodToHave(e.target.value)}
+                placeholder="Nice-to-have skills or experience, one per line"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="benefits">Benefits (optional)</Label>
+              <textarea
+                id="benefits"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                value={benefits}
+                onChange={(e) => setBenefits(e.target.value)}
+                placeholder="e.g. Health insurance, remote work, one per line"
+                disabled={loading}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Work type</Label>
               <Select
                 value={workType}
-                onValueChange={(v) => setWorkType(v as JobFormData["work_type"])}
+                onValueChange={(v) =>
+                  setWorkType(v as JobFormData["work_type"])
+                }
                 disabled={loading}
               >
                 <SelectTrigger>
@@ -198,7 +286,7 @@ export function JobForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Job type</Label>
+              <Label>Work time</Label>
               <Select
                 value={jobType}
                 onValueChange={(v) => setJobType(v as JobFormData["job_type"])}
@@ -297,17 +385,6 @@ export function JobForm({
             </div>
           </div>
           <div className="flex flex-wrap gap-6">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="eu_friendly"
-                checked={euFriendly}
-                onCheckedChange={(c) => setEuFriendly(!!c)}
-                disabled={loading}
-              />
-              <Label htmlFor="eu_friendly" className="font-normal cursor-pointer">
-                EU timezone friendly
-              </Label>
-            </div>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_active"

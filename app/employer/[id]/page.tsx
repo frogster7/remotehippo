@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     profile.company_name?.trim() || profile.full_name?.trim() || "Company";
   const title = `${name} | Jobs`;
   const description = profile.company_website
-    ? `Remote-friendly tech jobs at ${name}. EU timezone. View open positions.`
+    ? `Remote-friendly tech jobs at ${name}. View open positions.`
     : `Tech jobs at ${name}. View open positions.`;
   const canonical = `${getSiteUrl()}/employer/${id}`;
   return {

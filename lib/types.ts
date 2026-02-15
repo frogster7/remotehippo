@@ -16,11 +16,16 @@ export interface Job {
   salary_min: number | null;
   salary_max: number | null;
   location: string | null;
-  eu_timezone_friendly: boolean;
   is_active: boolean;
   application_email: string | null;
   application_url: string | null;
   closed_at: string | null;
+  summary: string | null;
+  responsibilities: string | null;
+  requirements: string | null;
+  what_we_offer: string | null;
+  good_to_have: string | null;
+  benefits: string | null;
   created_at: string;
   updated_at: string;
   employer?: {
@@ -43,10 +48,15 @@ export interface JobFormData {
   salary_min: number | null;
   salary_max: number | null;
   location: string | null;
-  eu_timezone_friendly: boolean;
   is_active: boolean;
   application_email: string | null;
   application_url: string | null;
+  summary: string | null;
+  responsibilities: string | null;
+  requirements: string | null;
+  what_we_offer: string | null;
+  good_to_have: string | null;
+  benefits: string | null;
 }
 
 export interface JobFilters {
@@ -61,8 +71,6 @@ export interface JobFilters {
   salary_max?: number;
   q?: string;
   location?: string;
-  /** When true, only jobs with eu_timezone_friendly = true */
-  eu_timezone_friendly?: boolean;
 }
 
 export const WORK_TYPES: { value: WorkType; label: string }[] = [
