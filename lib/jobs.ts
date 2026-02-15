@@ -129,3 +129,66 @@ export async function getJobByIdForEdit(jobId: string): Promise<Job | null> {
   if (error || !row) return null;
   return row as Job;
 }
+
+/** Check if a job is favorited by a user. Returns true/false, or false if not logged in. */
+export async function isJobFavorited(
+  jobId: string,
+  userId: string | undefined,
+): Promise<boolean> {
+  if (!userId) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("job_favorites")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("job_id", jobId)
+    .single();
+  return !!data && !error;
+}
+
+/** Get all favorited jobs for a user (with employer profile). */
+export async function getFavoritedJobs(userId: string): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("job_favorites")
+    .select(
+      `
+      job_id,
+      jobs (
+        id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+        salary_min, salary_max, location, eu_timezone_friendly, is_active, created_at, updated_at,
+        profiles(id, full_name, company_name, company_website, company_logo_url)
+      )
+    `,
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  // Flatten and attach employer profile
+  return data
+    .filter((row) => row.jobs) // filter out deleted jobs
+    .map((row) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const job = row.jobs as any;
+      const { profiles, ...rest } = job;
+      return { ...rest, employer: profiles ?? undefined } as Job;
+    });
+}
+
+/** Get all favorited job IDs for a user (fast lookup for list view). */
+export async function getFavoritedJobIds(
+  userId: string | undefined,
+): Promise<Set<string>> {
+  if (!userId) return new Set();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("job_favorites")
+    .select("job_id")
+    .eq("user_id", userId);
+
+  if (error || !data) return new Set();
+  return new Set(data.map((row) => row.job_id));
+}

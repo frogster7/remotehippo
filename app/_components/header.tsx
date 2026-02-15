@@ -30,6 +30,12 @@ export async function Header() {
           </Link>
           {user ? (
             <>
+              <Link
+                href="/saved-jobs"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Saved Jobs
+              </Link>
               {profile?.role === "employer" && (
                 <Link
                   href="/employer/dashboard"

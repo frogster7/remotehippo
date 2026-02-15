@@ -161,9 +161,34 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ## Not done yet (from PROJECT_BRIEF §13)
 
-- **Task 7:** Favorites – job seekers save jobs, `/saved-jobs`.
 - **Task 8:** SEO – meta tags, sitemap, robots, etc.
 - **Task 9:** Final polish.
+
+---
+
+## Task 7: Favorites (saved jobs)
+
+**What was done:**
+- **Data layer:** `lib/jobs.ts` – `isJobFavorited(jobId, userId)` checks if a job is favorited; `getFavoritedJobs(userId)` fetches all favorited jobs with employer profile; `getFavoritedJobIds(userId)` returns Set of job IDs for fast lookup in list views.
+- **Server actions:** `app/favorites/actions.ts` – `toggleFavorite(jobId)` adds/removes favorite (checks auth, returns new state); `ensureLoggedIn(currentPath)` helper redirects to login if not authenticated.
+- **UI component:** `app/favorites/favorite-button.tsx` – client component with heart icon; three variants: `default` (button with text), `ghost`, and `icon` (small icon-only for list views); redirects to login if not logged in; optimistic UI with loading state.
+- **Job detail:** `app/jobs/[slug]/page.tsx` – added FavoriteButton in header next to title; checks if job is favorited server-side and passes to button.
+- **Jobs list:** `app/jobs/page.tsx` – fetches favorited job IDs for current user; passes to JobCard component.
+- **Job card:** `app/jobs/job-card.tsx` – new client component for job list items; includes small heart icon favorite button in the top-right corner; clickable card area (Link) with favorite button overlay.
+- **Saved jobs page:** `app/saved-jobs\page.tsx` – server page; redirects to login if not authenticated; lists all favorited jobs with employer info, tech stack, badges; empty state with link to /jobs; each job card has favorite button (always true initially, toggles to remove).
+- **Header:** `app/_components/header.tsx` – "Saved Jobs" link shown only when user is logged in (between "Jobs" and "Dashboard"/"Profile").
+
+**Key files:**
+- `lib/jobs.ts` – favorite helpers.
+- `app/favorites/actions.ts` – server actions for toggle.
+- `app/favorites/favorite-button.tsx` – reusable favorite button (client).
+- `app/jobs/[slug]/page.tsx` – detail with favorite.
+- `app/jobs/page.tsx` – list with favorites.
+- `app/jobs/job-card.tsx` – job card component.
+- `app/saved-jobs/page.tsx` – saved jobs list.
+- `app/_components/header.tsx` – Saved Jobs link.
+
+**Notes:** Favorites are managed via `job_favorites` table with RLS (users can only manage own rows). FavoriteButton uses optimistic UI (updates state immediately, shows loading). Non-logged-in users are redirected to login with `?next=` parameter. Icon uses lucide-react `Heart` component (filled when favorited). All changes revalidate `/saved-jobs` and `/jobs` paths for fresh data.
 
 ---
 
@@ -176,8 +201,9 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Fix auth (login/register)   | `app/login/*`, `app/register/*`, `app/auth/callback/route.ts` |
 | Fix profile                 | `app/profile/*`, RLS on `profiles` |
 | Fix header / auth state     | `app/_components/header.tsx`, `app/layout.tsx` |
-| Jobs list / filters         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` |
+| Jobs list / filters         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
 | Job detail                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts` |
 | Employer dashboard / CRUD   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts` |
+| Favorites / saved jobs      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
 | Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
 | Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |

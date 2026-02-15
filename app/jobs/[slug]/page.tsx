@@ -1,10 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getJobBySlug } from "@/lib/jobs";
+import { getJobBySlug, isJobFavorited } from "@/lib/jobs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FavoriteButton } from "@/app/favorites/favorite-button";
+import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -32,6 +34,13 @@ export default async function JobDetailPage({ params }: Props) {
   const job = await getJobBySlug(slug);
   if (!job) notFound();
 
+  // Check if logged in and if job is favorited
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isFavorited = await isJobFavorited(job.id, user?.id);
+
   const companyName = job.employer?.company_name ?? job.employer?.full_name ?? "Company";
   const salaryStr = formatSalary(job.salary_min, job.salary_max);
 
@@ -47,9 +56,16 @@ export default async function JobDetailPage({ params }: Props) {
 
         <Card>
           <CardHeader className="space-y-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
-              <p className="mt-1 text-muted-foreground">{job.role}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
+                <p className="mt-1 text-muted-foreground">{job.role}</p>
+              </div>
+              <FavoriteButton
+                jobId={job.id}
+                initialIsFavorited={isFavorited}
+                isLoggedIn={!!user}
+              />
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{job.work_type}</Badge>
