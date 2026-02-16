@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createSignedCvUrl } from "@/lib/storage";
+import type { ApplicationPreference, Profile as ProfileType } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 
 export const metadata: Metadata = {
@@ -20,9 +22,33 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, full_name, company_name, company_website")
+    .select(
+      "id, role, full_name, last_name, phone_number, cv_file_url, company_name, company_website, company_logo_url, company_about, company_location, application_preference"
+    )
     .eq("id", user.id)
     .single();
+
+  let cvDownloadUrl: string | null = null;
+  if (profile?.cv_file_url) {
+    const { url } = await createSignedCvUrl(supabase, profile.cv_file_url, 3600);
+    cvDownloadUrl = url;
+  }
+
+  const profileData: ProfileType = {
+    id: profile?.id ?? user.id,
+    role: profile?.role ?? "job_seeker",
+    full_name: profile?.full_name ?? null,
+    last_name: profile?.last_name ?? null,
+    phone_number: profile?.phone_number ?? null,
+    cv_file_url: profile?.cv_file_url ?? null,
+    company_name: profile?.company_name ?? null,
+    company_website: profile?.company_website ?? null,
+    company_logo_url: profile?.company_logo_url ?? null,
+    company_about: profile?.company_about ?? null,
+    company_location: profile?.company_location ?? null,
+    application_preference: (profile?.application_preference ??
+      null) as ApplicationPreference | null,
+  };
 
   return (
     <main className="min-h-screen p-6 max-w-lg mx-auto">
@@ -42,13 +68,8 @@ export default async function ProfilePage() {
           </p>
         </div>
         <ProfileForm
-          profile={{
-            id: profile?.id ?? user.id,
-            role: profile?.role ?? "job_seeker",
-            full_name: profile?.full_name ?? null,
-            company_name: profile?.company_name ?? null,
-            company_website: profile?.company_website ?? null,
-          }}
+          profile={profileData}
+          cvDownloadUrl={cvDownloadUrl}
         />
       </div>
     </main>

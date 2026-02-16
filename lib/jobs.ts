@@ -58,7 +58,7 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
       salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
       summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
       created_at, updated_at,
-      profiles(id, full_name, company_name, company_website, company_logo_url)
+      profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
     `,
     )
     .eq("slug", slug)

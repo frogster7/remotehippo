@@ -17,7 +17,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" suppressHydrationWarning>
       <HomeHero
         jobCount={jobCount}
         roles={filterOptions.roles}

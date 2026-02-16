@@ -7,6 +7,7 @@ import Image from "next/image";
 import { MapPin, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatRelativeTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { HydrationSafeDiv } from "@/components/hydration-safe-div";
 import type { Job } from "@/lib/types";
 
 function formatSalary(min: number | null, max: number | null): string {
@@ -26,9 +27,9 @@ function RecentJobCard({ job, postedAt }: { job: Job; postedAt: string }) {
       href={`/jobs/${job.slug}`}
       className="flex w-72 shrink-0 flex-col rounded-xl border bg-card p-4 shadow-sm transition-colors hover:border-primary/30 hover:shadow-md scroll-snap-align-start"
     >
-      <div className="flex items-start justify-between gap-2">
+      <HydrationSafeDiv className="flex items-start justify-between gap-2">
         {job.employer?.company_logo_url ? (
-          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+          <HydrationSafeDiv className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
             <Image
               src={job.employer.company_logo_url}
               alt=""
@@ -36,22 +37,22 @@ function RecentJobCard({ job, postedAt }: { job: Job; postedAt: string }) {
               className="object-contain"
               sizes="40px"
             />
-          </div>
+          </HydrationSafeDiv>
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+          <HydrationSafeDiv className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
             {companyName.slice(0, 2).toUpperCase()}
-          </div>
+          </HydrationSafeDiv>
         )}
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
           {postedAt}
         </span>
-      </div>
+      </HydrationSafeDiv>
       <h3 className="mt-3 font-semibold text-primary line-clamp-2">
         {job.title}
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">{companyName}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <HydrationSafeDiv className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         {job.location && (
           <span className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
@@ -63,7 +64,7 @@ function RecentJobCard({ job, postedAt }: { job: Job; postedAt: string }) {
             {formatSalary(job.salary_min, job.salary_max)}
           </span>
         )}
-      </div>
+      </HydrationSafeDiv>
     </Link>
   );
 }
@@ -92,15 +93,15 @@ export function RecentJobs({ jobs }: RecentJobsProps) {
 
   return (
     <section className="border-t bg-muted/30 py-10 md:py-14">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+      <HydrationSafeDiv className="container mx-auto px-4">
+        <HydrationSafeDiv className="flex items-center justify-between gap-4">
+          <HydrationSafeDiv className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" aria-hidden />
             <h2 className="text-xl font-semibold tracking-tight">
               Recently posted jobs
             </h2>
-          </div>
-          <div className="flex items-center gap-1">
+          </HydrationSafeDiv>
+          <HydrationSafeDiv className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
@@ -121,9 +122,9 @@ export function RecentJobs({ jobs }: RecentJobsProps) {
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-          </div>
-        </div>
-        <div
+          </HydrationSafeDiv>
+        </HydrationSafeDiv>
+        <HydrationSafeDiv
           ref={scrollRef}
           {...dragHandlers}
           className="mt-6 flex cursor-grab gap-4 overflow-x-auto pb-2 scroll-smooth scrollbar-hide [scroll-snap-type:x_mandatory] active:cursor-grabbing"
@@ -135,16 +136,16 @@ export function RecentJobs({ jobs }: RecentJobsProps) {
               postedAt={formatRelativeTime(job.created_at)}
             />
           ))}
-        </div>
-        <div className="mt-6 text-center">
+        </HydrationSafeDiv>
+        <HydrationSafeDiv className="mt-6 text-center">
           <Link
             href="/jobs"
             className="text-sm font-medium text-primary hover:underline"
           >
             View all jobs →
           </Link>
-        </div>
-      </div>
+        </HydrationSafeDiv>
+      </HydrationSafeDiv>
     </section>
   );
 }

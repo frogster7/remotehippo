@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HydrationSafeDiv } from "@/components/hydration-safe-div";
 import { cn } from "@/lib/utils";
 import type { WorkType, JobType } from "@/lib/types";
 import { JOB_TYPES } from "@/lib/types";
@@ -80,10 +81,10 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
 
   return (
     <section className="py-8 md:py-12 lg:py-16">
-      <div className="container mx-auto px-4">
-        <div className="grid gap-8 lg:grid-cols-[1fr,minmax(280px,0.4fr)] lg:gap-12">
+      <HydrationSafeDiv className="container mx-auto px-4">
+        <HydrationSafeDiv className="grid gap-8 lg:grid-cols-[1fr,minmax(280px,0.4fr)] lg:gap-12">
           {/* Left: content & search */}
-          <div>
+          <HydrationSafeDiv>
             <h1 className="text-2xl font-semibold tracking-tight text-[#4A4A4A] md:text-3xl lg:text-4xl">
               Hello World. Hello new job
             </h1>
@@ -96,7 +97,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
 
             {/* Search bar */}
             <form onSubmit={handleSearch} className="mt-6">
-              <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:flex-wrap">
+              <HydrationSafeDiv className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:flex-wrap">
                 <Input
                   name="q"
                   placeholder="Position, company, keyword"
@@ -138,8 +139,8 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   <Search className="h-5 w-5" aria-hidden />
                   Search
                 </Button>
-              </div>
-              <div className="mt-2 flex items-center gap-2">
+              </HydrationSafeDiv>
+              <HydrationSafeDiv className="mt-2 flex items-center gap-2">
                 <Select
                   value={workTime || "__any__"}
                   onValueChange={(v) =>
@@ -158,15 +159,15 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </HydrationSafeDiv>
             </form>
 
             {/* Specializations & Popular technologies card */}
-            <div className="mt-6 rounded-xl border bg-card p-5 shadow-sm">
+            <HydrationSafeDiv className="mt-6 rounded-xl border bg-card p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-[#4A4A4A]">
                 Specializations
               </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
                 {specializationRoles.map((r) => {
                   const isSelected = selectedRoles.includes(r);
                   return (
@@ -185,11 +186,11 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                     </button>
                   );
                 })}
-              </div>
+              </HydrationSafeDiv>
               <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
                 Popular technologies
               </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
                 {popularTech.map((t) => {
                   const isSelected = selectedTech.includes(t);
                   return (
@@ -208,11 +209,11 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                     </button>
                   );
                 })}
-              </div>
+              </HydrationSafeDiv>
               <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
                 Work mode
               </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
                 {(["remote", "hybrid"] as const).map((w) => {
                   const isSelected = selectedWorkTypes.includes(w);
                   return (
@@ -231,21 +232,21 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                     </button>
                   );
                 })}
-              </div>
-            </div>
-          </div>
+              </HydrationSafeDiv>
+            </HydrationSafeDiv>
+          </HydrationSafeDiv>
 
           {/* Right: decorative imagery area */}
-          <div className="hidden lg:flex lg:items-center lg:justify-end">
-            <div className="relative h-64 w-full max-w-sm lg:h-80">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent" />
-              <div className="absolute right-4 top-8 h-24 w-24 rounded-full bg-primary/15" />
-              <div className="absolute bottom-12 left-8 h-20 w-20 rounded-full bg-primary/10" />
-              <div className="absolute right-1/4 top-1/2 h-16 w-16 -translate-y-1/2 rounded-2xl bg-primary/20" />
-            </div>
-          </div>
-        </div>
-      </div>
+          <HydrationSafeDiv className="hidden lg:flex lg:items-center lg:justify-end">
+            <HydrationSafeDiv className="relative h-64 w-full max-w-sm lg:h-80">
+              <HydrationSafeDiv className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent" />
+              <HydrationSafeDiv className="absolute right-4 top-8 h-24 w-24 rounded-full bg-primary/15" />
+              <HydrationSafeDiv className="absolute bottom-12 left-8 h-20 w-20 rounded-full bg-primary/10" />
+              <HydrationSafeDiv className="absolute right-1/4 top-1/2 h-16 w-16 -translate-y-1/2 rounded-2xl bg-primary/20" />
+            </HydrationSafeDiv>
+          </HydrationSafeDiv>
+        </HydrationSafeDiv>
+      </HydrationSafeDiv>
     </section>
   );
 }

@@ -9,6 +9,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 **Commit:** `Task 1: Next.js + Tailwind + TS scaffold with shadcn/ui`
 
 **What was done:**
+
 - Next.js 15 (App Router), TypeScript, Tailwind CSS.
 - shadcn/ui (New York style, neutral base, CSS variables). Components added later as needed.
 - ESLint (Next + TypeScript).
@@ -17,6 +18,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `lib/utils.ts` (shadcn `cn()`), `components.json` (shadcn config).
 
 **Key files:**
+
 - `app/layout.tsx` – root layout, metadata.
 - `app/page.tsx` – home page.
 - `app/globals.css` – Tailwind + shadcn CSS variables.
@@ -32,6 +34,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 **Commit:** `Task 2: Supabase setup - client, server utils, env example, DB migration + RLS`
 
 **What was done:**
+
 - Installed `@supabase/supabase-js` and `@supabase/ssr`.
 - Browser client: `lib/supabase/client.ts` – `createClient()` for Client Components.
 - Server client: `lib/supabase/server.ts` – `createClient()` (async) for Server Components, Route Handlers, Server Actions; uses `cookies()` from `next/headers`.
@@ -40,14 +43,16 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `supabase/README.md` – how to create project, set env, run migration, add auth redirect URL.
 
 **Key files:**
+
 - `lib/supabase/client.ts` – use in `"use client"` components.
 - `lib/supabase/server.ts` – use in server components / route handlers / server actions (always `await createClient()`).
 - `supabase/migrations/001_initial_schema.sql` – full schema + RLS; run once in Supabase SQL Editor.
 - `.env.local` – user’s real credentials (not committed; see `.gitignore`).
 
 **Database (from migration):**
+
 - **Enums:** `profile_role` (employer, job_seeker), `work_type` (remote, hybrid), `job_type` (full-time, contract).
-- **Tables:** `profiles` (id → auth.users, role, full_name, company_*, created_at), `jobs` (employer_id → profiles, title, slug, description, tech_stack, role, work_type, job_type, salary_*, location, eu_timezone_friendly, is_active, created_at, updated_at), `job_favorites` (user_id, job_id, unique pair).
+- **Tables:** `profiles` (id → auth.users, role, full*name, company*_, created*at), `jobs` (employer_id → profiles, title, slug, description, tech_stack, role, work_type, job_type, salary*_, location, eu_timezone_friendly, is_active, created_at, updated_at), `job_favorites` (user_id, job_id, unique pair).
 - **Triggers:** `handle_new_user` – on `auth.users` INSERT, creates row in `profiles` using `raw_user_meta_data` (full_name, role). `jobs_updated_at` – sets `updated_at` on jobs UPDATE.
 - **RLS:** Profiles viewable by all, update/delete own. Jobs: public sees active only; employers see and manage own. Favorites: users see and manage own.
 
@@ -60,6 +65,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 **Commit:** `Task 3: Auth flows - login, register, profile, callback, header`
 
 **What was done:**
+
 - Auth callback route for code exchange (e.g. email confirmation, OAuth): `app/auth/callback/route.ts`. Reads `?code` and optional `?next`, exchanges code for session, redirects to `next` or `/`.
 - Login: `app/login/page.tsx` (server), `app/login/login-form.tsx` (client). Email + password via Supabase; supports `?next=` for redirect after login (e.g. `/login?next=/profile`).
 - Register: `app/register/page.tsx`, `app/register/register-form.tsx`. Email, password, full name, role (job_seeker | employer). Sends `options.data: { full_name, role }` to Supabase so `handle_new_user` trigger can create `profiles` row. Shows “Check your email” after submit (when email confirmation is enabled).
@@ -69,6 +75,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `supabase/README.md` updated with step for adding auth redirect URL.
 
 **Key files:**
+
 - `app/auth/callback/route.ts` – GET handler, no UI.
 - `app/login/page.tsx` + `app/login/login-form.tsx` – login page and form (client form calls `createClient()` from `@/lib/supabase/client`).
 - `app/register/page.tsx` + `app/register/register-form.tsx` – signup with role and full_name in metadata.
@@ -82,6 +89,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Fix: Hydration mismatch (browser extension)
 
 **What was done:**
+
 - In `app/layout.tsx`, added `suppressHydrationWarning` to `<body>`.
 - Cause: browser extensions (e.g. password managers) add attributes to `<body>` after server render, so server HTML and client DOM didn’t match. This is not an app bug.
 
@@ -89,11 +97,25 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 **Follow-up (extensions injecting into divs):** Some extensions (e.g. Bitdefender) inject `bis_skin_checked="1"` into container divs. Added `suppressHydrationWarning` to the header inner div (`header.tsx`), home page container (`page.tsx`), and a wrapper div in `layout.tsx` around `<Header />` and `{children}` so hydration warnings from injected attributes are suppressed.
 
+**Follow-up (homepage sections):** Extension continued to inject into many nested divs on the homepage (HomeHero, RecentJobs, CompaniesWorthKnowing). Because `suppressHydrationWarning` only applies one level deep, added a reusable `HydrationSafeDiv` component (`components/hydration-safe-div.tsx`) – a `forwardRef` div that sets `suppressHydrationWarning`. Replaced all structural divs in `home-hero.tsx`, `recent-jobs.tsx`, and `companies-worth-knowing.tsx` with `HydrationSafeDiv`; added `suppressHydrationWarning` to `<main>` in `app/page.tsx`. This eliminates hydration mismatches from extension-injected attributes on the home page.
+
+---
+
+## Fix: Next.js Image – Supabase storage hostname
+
+**What was done:**
+
+- `next/image` requires remote hostnames to be allowlisted. Company logos (and other images) from Supabase Storage use URLs like `https://<project>.supabase.co/storage/v1/object/public/...`, which caused "Invalid src prop … hostname is not configured" when using the Image component.
+- In `next.config.ts`, added `images.remotePatterns` with one entry: `protocol: "https"`, `hostname: "*.supabase.co"`, `pathname: "/storage/v1/object/public/**"`. Any Supabase project’s public storage URLs are now allowed for `next/image`.
+
+**Key file:** `next.config.ts` – `images.remotePatterns`.
+
 ---
 
 ## Task 5: Public job pages
 
 **What was done:**
+
 - **Types:** `lib/types.ts` – `Job`, `JobFilters`, `WorkType`, `JobType`, and constants `WORK_TYPES`, `JOB_TYPES`.
 - **Data layer:** `lib/jobs.ts` – `getJobs(filters)` for list with filters, `getJobBySlug(slug)` for detail (with employer profile embed), `getFilterOptions()` for role/tech dropdowns.
 - **List page:** `app/jobs/page.tsx` – SSR, reads `searchParams` (q, role, work_type, job_type, tech, salary_min, salary_max), renders job cards with link to `/jobs/[slug]`. Empty state when no results.
@@ -103,6 +125,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **shadcn:** Added `badge`, `select` components.
 
 **Key files:**
+
 - `lib/types.ts` – job and filter types.
 - `lib/jobs.ts` – server-side job queries (use `createClient()` from `@/lib/supabase/server`).
 - `app/jobs/page.tsx` – jobs list (server).
@@ -116,6 +139,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Fix: Header not updating after login / sign out
 
 **What was done:**
+
 - Login and sign out now use a **full page redirect** (`window.location.href`) instead of `router.refresh()` + `router.push()`. The header is a server component that reads the session from cookies; client-side navigation did not always re-run the layout with the new cookies, so the header kept showing “Log in” / “Sign up” or “Profile” until a manual refresh.
 - **Login:** `app/login/login-form.tsx` – after successful `signInWithPassword`, redirect with `window.location.href = redirectTo`.
 - **Sign out:** `app/profile/profile-form.tsx` – after `signOut()`, redirect with `window.location.href = "/"`.
@@ -129,6 +153,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Task 6: Employer dashboard (CRUD jobs)
 
 **What was done:**
+
 - **Data layer:** `lib/jobs.ts` – `slugifyTitle()`, `generateJobSlug(title)` for new jobs; `getEmployerJobs(employerId)` for dashboard list; `getJobByIdForEdit(jobId)` for edit page (RLS ensures only owner can read).
 - **Server actions:** `app/employer/actions.ts` – `createJob(form)` (generates slug, inserts, then redirects to dashboard), `updateJob(jobId, form)`, `deleteJob(jobId)` (redirects to dashboard on success). All actions call `ensureEmployer()` (redirect to login or profile if not employer).
 - **Dashboard:** `app/employer/dashboard/page.tsx` – server page; redirects to login or profile if not employer; lists own jobs with View (public slug), Edit, and status (Active/Draft); “New job” CTA.
@@ -139,6 +164,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **shadcn:** Added `checkbox` component.
 
 **Key files:**
+
 - `lib/jobs.ts` – employer helpers and slug generation.
 - `app/employer/actions.ts` – create/update/delete job (server actions).
 - `app/employer/dashboard/page.tsx` – employer dashboard list.
@@ -154,6 +180,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Fix: Employer dashboard – client/server boundary (Task 6 follow-up)
 
 **What was done:**
+
 - **JobFormData** moved from `app/employer/actions.ts` to `lib/types.ts` so the client `JobForm` never imports from the `"use server"` actions file (avoids webpack bundling server-only code in the client and “Cannot read properties of undefined (reading 'call')”).
 - **JobForm** action props (`createAction`, `updateAction`, `deleteAction`) made optional; new job page passes only `createAction={createJob}`; edit page passes only `updateAction` and `deleteAction`. Removed inline lambdas (e.g. `async () => ({ error: "..." })`) so no non–server-action functions are passed to the Client Component (fixes “Functions cannot be passed directly to Client Components unless you explicitly expose it by marking it with 'use server'”).
 
@@ -164,6 +191,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Task 8: SEO (meta tags, sitemap, robots, OpenGraph, canonical)
 
 **What was done:**
+
 - **Site URL:** `lib/site.ts` – `getSiteUrl()` reads `NEXT_PUBLIC_SITE_URL` or falls back to localhost (server) / `window.location.origin` (client). Documented in `.env.example`.
 - **Root layout:** `app/layout.tsx` – `metadataBase`, title template `%s | Niche Tech Job Board`, OpenGraph (title, description, type, locale), Twitter card (summary_large_image), robots index/follow.
 - **Job detail:** `app/jobs/[slug]/page.tsx` – `generateMetadata` extended with `alternates.canonical` (`/jobs/[slug]`), OpenGraph (title, description, url, type), Twitter (card, title, description).
@@ -172,6 +200,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **Robots:** `app/robots.ts` – allow `/`, disallow `/employer/`, `/profile`, `/saved-jobs`, `/login`, `/register`, `/auth/`; sitemap URL from `getSiteUrl()`.
 
 **Key files:**
+
 - `lib/site.ts` – getSiteUrl().
 - `lib/jobs.ts` – getActiveJobSlugs() for sitemap.
 - `app/layout.tsx` – default metadata + OG/Twitter.
@@ -187,12 +216,14 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Task 9: Final polish
 
 **What was done:**
+
 - **Skeleton loaders:** Added shadcn `Skeleton` and `Sheet` components. Created `loading.tsx` for `/jobs` (filter + job card skeletons), `/jobs/[slug]` (detail skeleton), `/employer/dashboard`, and `/saved-jobs` so navigation shows instant loading UI (per §10 UI/UX).
 - **Branding:** Header label updated from "Niche Job Board" to "Niche Tech Job Board" for consistency with metadata and home.
 - **Mobile header:** New client component `app/_components/header-nav.tsx` – desktop nav unchanged (hidden on small screens with `md:flex`), mobile: hamburger button opens a Sheet from the right with the same links. Header (server) passes `user` and `isEmployer` to HeaderNav.
 - **Empty states:** Briefcase icon (lucide-react) added to jobs list empty state ("No jobs match your filters") and saved-jobs empty state for light visual polish.
 
 **Key files:**
+
 - `components/ui/skeleton.tsx`, `components/ui/sheet.tsx` (shadcn).
 - `app/jobs/loading.tsx`, `app/jobs/[slug]/loading.tsx`, `app/employer/dashboard/loading.tsx`, `app/saved-jobs/loading.tsx`.
 - `app/_components/header.tsx` (branding, HeaderNav), `app/_components/header-nav.tsx` (desktop + mobile menu).
@@ -211,6 +242,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Task 7: Favorites (saved jobs)
 
 **What was done:**
+
 - **Data layer:** `lib/jobs.ts` – `isJobFavorited(jobId, userId)` checks if a job is favorited; `getFavoritedJobs(userId)` fetches all favorited jobs with employer profile; `getFavoritedJobIds(userId)` returns Set of job IDs for fast lookup in list views.
 - **Server actions:** `app/favorites/actions.ts` – `toggleFavorite(jobId)` adds/removes favorite (checks auth, returns new state); `ensureLoggedIn(currentPath)` helper redirects to login if not authenticated.
 - **UI component:** `app/favorites/favorite-button.tsx` – client component with heart icon; three variants: `default` (button with text), `ghost`, and `icon` (small icon-only for list views); redirects to login if not logged in; optimistic UI with loading state.
@@ -221,6 +253,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **Header:** `app/_components/header.tsx` – "Saved Jobs" link shown only when user is logged in (between "Jobs" and "Dashboard"/"Profile").
 
 **Key files:**
+
 - `lib/jobs.ts` – favorite helpers.
 - `app/favorites/actions.ts` – server actions for toggle.
 - `app/favorites/favorite-button.tsx` – reusable favorite button (client).
@@ -244,8 +277,9 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **Step 4 – Public employer/company page:** `app/employer/[id]/page.tsx` – public profile (logo, name, website) + active jobs (JobCards). `lib/jobs.ts`: `getEmployerPublicProfile(id)`, `getActiveJobsByEmployer(employerId)`, `getEmployerIdsWithActiveJobs()`. Job detail links “View all jobs from this company” → `/employer/[id]`. Robots disallow only `/employer/dashboard` and `/employer/jobs`; sitemap includes `/employer/{id}` for employers with active jobs.
 
 **Key files (steps 1–4):**
+
 - Migrations: `002_job_application_fields.sql`, `003_job_closed_at.sql` (run after 001).
-- `lib/format.ts`, `lib/types.ts` (JobFilters.eu_timezone_friendly, Job closed_at / application_*).
+- `lib/format.ts`, `lib/types.ts` (JobFilters.eu*timezone_friendly, Job closed_at / application*\*).
 - `lib/jobs.ts` (application/closed_at in selects, getEmployerPublicProfile, getActiveJobsByEmployer, getEmployerIdsWithActiveJobs).
 - `app/employer/actions.ts` (closeJob, reopenJob), `app/employer/close-reopen-button.tsx`, `app/employer/[id]/page.tsx`.
 - `app/jobs/jobs-filter.tsx` (EU checkbox), `app/jobs/page.tsx`, `app/jobs/[slug]/page.tsx`, `app/jobs/job-card.tsx` (postedAt, Filled badge).
@@ -258,6 +292,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Task 10: UI improvements (pracuj.pl inspired)
 
 **What was done:**
+
 - **Colors:** Updated `app/globals.css` – primary blue (#5B41E1), light lavender background (#F5F6FA), selected filter (#E8E5FB), dark grey text (#4A4A4A). Header logo uses primary color.
 - **Jobs page layout:** Two-column layout – filters in left sidebar (~320px), job listings on right. Filters shown as vertical cards: Active filters (removable tags) + Filters card (search, location, EU checkbox, role, work type, tech, salary). Job count and "Sorted by newest" above listings. Background `bg-muted/30`.
 - **Job cards:** Tech stack as pill-shaped tags (`bg-primary/10`); work type/job type as inline text; salary in green; FavoriteButton in top-right.
@@ -269,6 +304,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 - **Home hero components:** `app/_components/home-hero.tsx` (client, multi-select state), `app/_components/recent-jobs.tsx` (server-rendered cards).
 
 **Key files:**
+
 - `app/globals.css` – color variables.
 - `app/page.tsx` – fetches jobCount, recentJobs, filterOptions; renders HomeHero + RecentJobs.
 - `app/_components/home-hero.tsx` – hero with search form and multi-select tags.
@@ -287,12 +323,14 @@ Reference for what was implemented at each major step. Use this when debugging o
 ## Homepage UX updates (post Task 10)
 
 **What was done:**
+
 - **Work time dropdown:** Moved outside the main search bar container into its own row below; styled as a standalone control.
 - **Location dropdown:** Replaced plain input with a Select dropdown; options include Any location, Remote, Berlin, London, Amsterdam, New York, San Francisco. Styled with `rounded-lg`, `shadow-lg` for a cleaner look.
 - **Recently posted jobs & Companies worth knowing:** Scrollbars hidden via `.scrollbar-hide` utility; horizontal drag-to-scroll enabled (no visible scrollbar, users drag left/right). `lib/use-drag-scroll.ts` hook handles mousedown/move/up and prevents link navigation when dragging.
 - **Primary color:** Switched from purple (#5B41E1) to #4855c6 (`hsl(234, 52%, 53%)`) in `app/globals.css` for both light and dark themes. Secondary, accent, and ring updated accordingly. Replaced hardcoded `#E8E5FB` with `bg-primary/10` where applicable.
 
 **Key files:**
+
 - `app/_components/home-hero.tsx` – Work time moved out, Location Select, `bg-primary/10`.
 - `app/_components/recent-jobs.tsx` – `useDragScroll`, `scrollbar-hide`, `cursor-grab`.
 - `app/_components/companies-worth-knowing.tsx` – new section, same drag/scrollbar behavior.
@@ -304,26 +342,89 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Dual registration & application flow (Steps 1–4)
+
+**What was done:**
+
+- **Migration 006 – User & company profiles + applications:** New enum `application_preference` ('website' | 'email'). On `profiles`: added `last_name`, `phone_number`, `cv_file_url`, `company_about`, `company_location`, `application_preference`. Trigger `handle_new_user` updated to set these from signup metadata. New table `applications` (job*id, applicant_id, applicant*_, cv*url, cover_letter*_, status, applied_at) with RLS: users can insert/view own; employers can view for their jobs.
+- **Types (`lib/types.ts`):** `ProfileRole`, `ApplicationPreference`, full `Profile`, `UserProfile`, `CompanyProfile`, `Application`, `ApplicationFormData`, `APPLICATION_PREFERENCES`. `Job.employer` extended with optional `company_about`, `company_location`, `application_preference`.
+- **Separate registration:** `/register` shows two cards (Job Seeker / Company). `/register/user` – form: first name, last name, email, phone, password; signUp with `role: 'job_seeker'`, `full_name`, `last_name`, `phone_number`. `/register/company` – form: company name, logo URL (optional), about, location, website (optional), application preference (email vs website), email, password; signUp with `role: 'employer'` and company metadata. Old single `RegisterForm` at `app/register/register-form.tsx` is unused.
+- **Storage (migration 007 + `lib/storage.ts`):** Buckets `user-cvs` (private, 10 MB, PDF/DOC/DOCX) and `company-logos` (public, 2 MB, images). Paths `{user_id}/{filename}`. RLS so users manage only their own folder. Helpers: `uploadCv`, `uploadLogo`, `deleteStorageFile`, `getPublicUrl`, `createSignedCvUrl`. Validation: `CV_ALLOWED_TYPES/EXTENSIONS`, `LOGO_*`, `isAllowedCvType`, `isAllowedLogoFileName`, etc. **Note:** `profiles.cv_file_url` stores the **path** (e.g. `userId/file.pdf`); use `createSignedCvUrl` when a URL is needed.
+
+**Key files:**
+
+- `supabase/migrations/006_user_and_company_profiles.sql`, `007_storage_buckets.sql`
+- `lib/types.ts` (Profile, Application, APPLICATION_PREFERENCES)
+- `lib/storage.ts` (upload/delete/signed URL, validation)
+- `app/register/page.tsx` (two cards), `app/register/user/*`, `app/register/company/*`
+
+**Not done yet (continue in new chat):** (None; apply flow done in next section.)
+
+---
+
+## Step 5 – Profile page updates (user + company)
+
+**What was done:**
+
+- **Profile page (`app/profile/page.tsx`):** Fetches full profile (last_name, phone_number, cv_file_url, company_about, company_location, application_preference, company_logo_url). Builds signed CV URL via `createSignedCvUrl` when user has a CV; passes profile + `cvDownloadUrl` to the form.
+- **Profile actions (`app/profile/actions.ts`):** `updateProfile(data)` for all text/select fields; `uploadCvAndUpdateProfile(formData)` / `deleteCvAndUpdateProfile()` for CV (path stored in `cv_file_url`); `uploadLogoAndUpdateProfile(formData)` / `deleteLogoAndUpdateProfile()` for logo (public URL stored in `company_logo_url`; path derived from URL for delete). `getSignedCvUrl()` for optional client-side refresh of download link.
+- **Profile form (`app/profile/profile-form.tsx`):** Uses `Profile` from `lib/types`. **User (job seeker):** First name, last name, phone number; CV card with current file name, Download (signed URL), Replace, Delete. **Employer:** Company name, website, about (textarea), location, application preference (Select); logo card with preview, Upload/Replace, Delete. File inputs use `lib/storage` validation (CV: PDF/DOC/DOCX; logo: JPG/PNG/WebP/GIF). After upload/delete, `router.refresh()` so page re-fetches profile and signed URL.
+
+**Key files:**
+
+- `app/profile/page.tsx` – server; full profile + signed CV URL.
+- `app/profile/actions.ts` – updateProfile, upload/delete CV, upload/delete logo.
+- `app/profile/profile-form.tsx` – Account card (name, phone, role), CV card (job seeker), logo card (employer), sign out.
+
+**Notes:** CV is private bucket (path in DB, signed URL for download). Logo is public bucket (full URL in DB for display; path parsed from URL for delete). Role switch still in form; employer-only fields and company logo only shown when role is employer.
+
+---
+
+## Apply flow – /jobs/[slug]/apply, form, email to employer
+
+**What was done:**
+
+- **Apply button:** When job has `application_email` and employer `application_preference === 'email'`, job detail "Apply" links to `/jobs/[slug]/apply` instead of mailto. Otherwise unchanged (application_url → external, application_email without preference → mailto, etc.).
+- **getJobBySlug:** Employer select now includes `application_preference` so apply CTA can choose in-app vs external.
+- **Apply page (`app/jobs/[slug]/apply/page.tsx`):** Requires login (redirect to login with `next`). Loads job by slug; if closed or no application_email or preference ≠ email, redirects to job. Fetches user profile for prefills and CV; builds signed CV URL for form. Renders `ApplicationForm` with job, slug, prefilled name/last name/email/phone, hasCv, cvDownloadUrl, cvFileName.
+- **Application form (`application-form.tsx`):** First/last name, email, phone (prefilled), note that CV comes from profile (link to profile); cover letter optional. If no CV, shows warning and disables submit. Submit → `submitApplication(slug, formData)`.
+- **Submit action (`apply/actions.ts`):** Auth check; load job (must have application_email and employer preference email); require profile CV; prevent duplicate application (same applicant_id + job_id); create 24h signed CV URL; insert into `applications` (cv_url = path); call `sendApplicationNotification` to job.application_email. On email failure, log and still return success (application saved).
+- **Email (`lib/email.ts`):** `sendApplicationNotification(params)` – plain-text email with applicant name, email, phone, cover letter, and CV download link (signed URL). Uses Resend when `RESEND_API_KEY` is set; otherwise no-op. `.env.example`: optional `RESEND_API_KEY`, `RESEND_FROM`.
+
+**Key files:**
+
+- `lib/jobs.ts` – getJobBySlug employer includes application_preference.
+- `app/jobs/[slug]/page.tsx` – getApplyProps(job, slug) → /jobs/[slug]/apply when preference email.
+- `app/jobs/[slug]/apply/page.tsx`, `application-form.tsx`, `apply/actions.ts`.
+- `lib/email.ts` – sendApplicationNotification (Resend).
+
+**Notes:** One application per user per job. CV is read from profile only (no one-off upload on apply). Employer sees applications in DB; email is optional (Resend). For employer dashboard viewing applications (list + CV download), add later if needed.
+
+---
+
 ## Quick reference
 
-| Need to…                    | Look at… |
-|-----------------------------|----------|
-| Change Supabase env         | `.env.local`, `.env.example` |
-| Change DB or RLS            | `supabase/migrations/001_initial_schema.sql` (then re-run or add new migration) |
-| Fix auth (login/register)   | `app/login/*`, `app/register/*`, `app/auth/callback/route.ts` |
-| Fix profile                 | `app/profile/*`, RLS on `profiles` |
-| Fix header / auth state     | `app/_components/header.tsx`, `app/layout.tsx` |
-| Jobs list / filters         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
-| Job detail                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts` |
-| Employer dashboard / CRUD   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts` |
-| Favorites / saved jobs      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts` |
-| SEO (sitemap, robots, meta)  | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata |
-| Loading / polish            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states |
-| Apply URL/email, close listing | `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/employer/actions.ts`, `app/employer/close-reopen-button.tsx`, migrations 002–003 |
-| EU timezone filter          | `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` (getJobs), `lib/types.ts` (JobFilters) |
-| Public employer page        | `app/employer/[id]/page.tsx`, `lib/jobs.ts` (getEmployerPublicProfile, getActiveJobsByEmployer) |
-| Job alerts (later)          | See `FUTURE.md` |
-| Homepage hero, recent jobs, companies | `app/_components/home-hero.tsx`, `app/_components/recent-jobs.tsx`, `app/_components/companies-worth-knowing.tsx`, `app/page.tsx`, `lib/use-drag-scroll.ts` |
-| Multi-select filters        | `lib/types.ts` (roles, tech, work_types arrays), `lib/jobs.ts` (getJobs), `app/jobs/jobs-filter.tsx` |
-| Add UI components           | `npx shadcn@latest add <component>`, `components/ui/` |
-| Supabase client in component| Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await). |
+| Need to…                                    | Look at…                                                                                                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Change Supabase env                         | `.env.local`, `.env.example`                                                                                                                                |
+| Change DB or RLS                            | `supabase/migrations/001_initial_schema.sql` (then re-run or add new migration)                                                                             |
+| Fix auth (login/register)                   | `app/login/*`, `app/register/*`, `app/auth/callback/route.ts`                                                                                               |
+| Fix profile                                 | `app/profile/*`, RLS on `profiles`                                                                                                                          |
+| Fix header / auth state                     | `app/_components/header.tsx`, `app/layout.tsx`                                                                                                              |
+| Jobs list / filters                         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                     |
+| Job detail                                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts`                                                                                                                   |
+| Employer dashboard / CRUD                   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts`                                    |
+| Favorites / saved jobs                      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                               |
+| SEO (sitemap, robots, meta)                 | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata                                                                                    |
+| Loading / polish                            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states                                                                              |
+| Apply URL/email, close listing              | `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/employer/actions.ts`, `app/employer/close-reopen-button.tsx`, migrations 002–003                           |
+| EU timezone filter                          | `app/jobs/jobs-filter.tsx`, `lib/jobs.ts` (getJobs), `lib/types.ts` (JobFilters)                                                                            |
+| Public employer page                        | `app/employer/[id]/page.tsx`, `lib/jobs.ts` (getEmployerPublicProfile, getActiveJobsByEmployer)                                                             |
+| Job alerts (later)                          | See `FUTURE.md`                                                                                                                                             |
+| Homepage hero, recent jobs, companies       | `app/_components/home-hero.tsx`, `app/_components/recent-jobs.tsx`, `app/_components/companies-worth-knowing.tsx`, `app/page.tsx`, `lib/use-drag-scroll.ts` |
+| Multi-select filters                        | `lib/types.ts` (roles, tech, work_types arrays), `lib/jobs.ts` (getJobs), `app/jobs/jobs-filter.tsx`                                                        |
+| Add UI components                           | `npx shadcn@latest add <component>`, `components/ui/`                                                                                                       |
+| Supabase client in component                | Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await).                                                                                 |
+| Dual registration, profiles, storage, apply | Migrations 006–007, `lib/types.ts`, `lib/storage.ts`, `lib/email.ts`, `app/register/*`, `app/profile/*`, `app/jobs/[slug]/apply/*`.                         |
+| Hydration (extension-injected attributes)  | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`. |
+| Next.js Image + Supabase storage           | `next.config.ts` (images.remotePatterns for *.supabase.co).                                                                                                |

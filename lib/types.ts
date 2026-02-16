@@ -3,6 +3,48 @@
 export type WorkType = "remote" | "hybrid";
 export type JobType = "full-time" | "contract";
 
+/** Profile role (DB: profile_role enum). */
+export type ProfileRole = "employer" | "job_seeker";
+
+/** How employer wants to receive applications (DB: application_preference enum). */
+export type ApplicationPreference = "website" | "email";
+
+/** Full profile row from DB. Used for both job seekers and employers. */
+export interface Profile {
+  id: string;
+  role: ProfileRole;
+  full_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  cv_file_url: string | null;
+  company_name: string | null;
+  company_website: string | null;
+  company_logo_url: string | null;
+  company_about: string | null;
+  company_location: string | null;
+  application_preference: ApplicationPreference | null;
+}
+
+/** Job seeker profile fields (subset of Profile). */
+export type UserProfile = Pick<
+  Profile,
+  "id" | "role" | "full_name" | "last_name" | "phone_number" | "cv_file_url"
+>;
+
+/** Employer/company profile fields (subset of Profile). */
+export type CompanyProfile = Pick<
+  Profile,
+  | "id"
+  | "role"
+  | "full_name"
+  | "company_name"
+  | "company_website"
+  | "company_logo_url"
+  | "company_about"
+  | "company_location"
+  | "application_preference"
+>;
+
 export interface Job {
   id: string;
   employer_id: string;
@@ -34,7 +76,37 @@ export interface Job {
     company_name: string | null;
     company_website: string | null;
     company_logo_url: string | null;
+    company_about?: string | null;
+    company_location?: string | null;
+    application_preference?: ApplicationPreference | null;
   };
+}
+
+/** Single row from applications table. */
+export interface Application {
+  id: string;
+  job_id: string;
+  applicant_id: string;
+  applicant_name: string;
+  applicant_last_name: string;
+  applicant_email: string;
+  applicant_phone: string;
+  cv_url: string;
+  cover_letter_text: string | null;
+  cover_letter_url: string | null;
+  status: string;
+  applied_at: string;
+}
+
+/** Payload for submitting a job application (apply form). */
+export interface ApplicationFormData {
+  applicant_name: string;
+  applicant_last_name: string;
+  applicant_email: string;
+  applicant_phone: string;
+  cv_url: string;
+  cover_letter_text?: string | null;
+  cover_letter_url?: string | null;
 }
 
 /** Payload for creating/updating a job (employer form). */
@@ -81,4 +153,21 @@ export const WORK_TYPES: { value: WorkType; label: string }[] = [
 export const JOB_TYPES: { value: JobType; label: string }[] = [
   { value: "full-time", label: "Full-time" },
   { value: "contract", label: "Contract" },
+];
+
+export const APPLICATION_PREFERENCES: {
+  value: ApplicationPreference;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "email",
+    label: "Email",
+    description: "Applications will be sent to your registered email",
+  },
+  {
+    value: "website",
+    label: "Company website",
+    description: "Applicants will be redirected to your website to apply",
+  },
 ];

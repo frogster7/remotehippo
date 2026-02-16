@@ -45,7 +45,10 @@ function SectionContent({ text }: { text: string }) {
   );
 }
 
-function getApplyProps(job: Awaited<ReturnType<typeof getJobBySlug>>) {
+function getApplyProps(
+  job: Awaited<ReturnType<typeof getJobBySlug>>,
+  slug: string
+) {
   if (!job) return null;
   if (job.closed_at) {
     return {
@@ -61,6 +64,17 @@ function getApplyProps(job: Awaited<ReturnType<typeof getJobBySlug>>) {
       applyHref: job.application_url,
       applyLabel: "Apply for this job",
       applyNote: "You will be directed to the employer's application process.",
+    };
+  }
+  if (
+    job.application_email &&
+    job.employer?.application_preference === "email"
+  ) {
+    return {
+      isClosed: false as const,
+      applyHref: `/jobs/${slug}/apply`,
+      applyLabel: "Apply for this job",
+      applyNote: "Submit your application on our site. We'll send it to the employer.",
     };
   }
   if (job.application_email) {
@@ -127,7 +141,7 @@ export default async function JobDetailPage({ params }: Props) {
 
   const companyName = job.employer?.company_name ?? job.employer?.full_name ?? "Company";
   const salaryStr = formatSalary(job.salary_min, job.salary_max);
-  const applyProps = getApplyProps(job);
+  const applyProps = getApplyProps(job, slug);
   const siteUrl = getSiteUrl();
   const shareUrl = `${siteUrl}/jobs/${slug}`;
 

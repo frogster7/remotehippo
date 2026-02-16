@@ -5,6 +5,7 @@ import { useDragScroll } from "@/lib/use-drag-scroll";
 import Image from "next/image";
 import { Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HydrationSafeDiv } from "@/components/hydration-safe-div";
 
 export type EmployerForHomepage = {
   id: string;
@@ -27,7 +28,7 @@ function CompanyCard({ employer }: { employer: EmployerForHomepage }) {
       className="flex w-72 shrink-0 flex-col items-center rounded-xl border bg-card p-6 shadow-sm transition-colors hover:border-primary/30 hover:shadow-md scroll-snap-align-start"
     >
       {employer.company_logo_url ? (
-        <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-muted">
+        <HydrationSafeDiv className="relative h-14 w-14 overflow-hidden rounded-xl bg-muted">
           <Image
             src={employer.company_logo_url}
             alt=""
@@ -35,11 +36,11 @@ function CompanyCard({ employer }: { employer: EmployerForHomepage }) {
             className="object-contain p-1"
             sizes="56px"
           />
-        </div>
+        </HydrationSafeDiv>
       ) : (
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-xl font-semibold text-primary">
+        <HydrationSafeDiv className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-xl font-semibold text-primary">
           {name.slice(0, 2).toUpperCase()}
-        </div>
+        </HydrationSafeDiv>
       )}
       <p className="mt-3 text-center font-medium line-clamp-2">{name}</p>
       <span className="mt-1 text-xs text-muted-foreground">View jobs →</span>
@@ -70,15 +71,15 @@ export function CompaniesWorthKnowing({
 
   return (
     <section className="border-t bg-muted/30 py-10 md:py-14">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+      <HydrationSafeDiv className="container mx-auto px-4">
+        <HydrationSafeDiv className="flex items-center justify-between gap-4">
+          <HydrationSafeDiv className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" aria-hidden />
             <h2 className="text-xl font-semibold tracking-tight">
               Companies worth knowing
             </h2>
-          </div>
-          <div className="flex items-center gap-1">
+          </HydrationSafeDiv>
+          <HydrationSafeDiv className="flex items-center gap-1">
             <Button
               type="button"
               variant="outline"
@@ -99,9 +100,9 @@ export function CompaniesWorthKnowing({
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
-          </div>
-        </div>
-        <div
+          </HydrationSafeDiv>
+        </HydrationSafeDiv>
+        <HydrationSafeDiv
           ref={scrollRef}
           {...dragHandlers}
           className="mt-6 flex cursor-grab gap-4 overflow-x-auto pb-2 scroll-smooth scrollbar-hide [scroll-snap-type:x_mandatory] active:cursor-grabbing"
@@ -109,8 +110,8 @@ export function CompaniesWorthKnowing({
           {employers.map((employer) => (
             <CompanyCard key={employer.id} employer={employer} />
           ))}
-        </div>
-      </div>
+        </HydrationSafeDiv>
+      </HydrationSafeDiv>
     </section>
   );
 }

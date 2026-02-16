@@ -30,6 +30,8 @@ The first migration creates:
 - Trigger: create a `profiles` row when a user signs up
 - RLS policies as per PROJECT_BRIEF §7
 
+Also run **`006_user_and_company_profiles.sql`** and **`007_storage_buckets.sql`** when using separate user/company registration and file uploads (CVs, logos).
+
 (Optional: if you use the Supabase CLI, run `supabase db push` from the project root.)
 
 ## 4. Auth redirect URL (for email confirmation / OAuth)
