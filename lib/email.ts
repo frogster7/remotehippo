@@ -15,15 +15,22 @@ export type ApplicationEmailParams = {
   cvDownloadUrl: string | null;
 };
 
+export type SendApplicationResult =
+  | { error: null; skipped?: false }
+  | { error: string | null; skipped: true };
+
 export async function sendApplicationNotification(
   params: ApplicationEmailParams
-): Promise<{ error: string | null }> {
-  const apiKey = process.env.RESEND_API_KEY;
+): Promise<{ error: string | null; skipped?: boolean }> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
-    return { error: null }; // no-op when not configured
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[email] RESEND_API_KEY is not set – application emails will not be sent.");
+    }
+    return { error: null, skipped: true };
   }
 
-  const from = process.env.RESEND_FROM ?? "onboarding@resend.dev";
+  const from = (process.env.RESEND_FROM ?? "onboarding@resend.dev").trim();
   const {
     to,
     jobTitle,
@@ -58,16 +65,30 @@ export async function sendApplicationNotification(
   try {
     const { Resend } = await import("resend");
     const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: typeof from === "string" ? from : "onboarding@resend.dev",
+    const { data, error } = await resend.emails.send({
+      from: from || "onboarding@resend.dev",
       to: [to],
       subject: `Application: ${jobTitle} – ${applicantName} ${applicantLastName}`,
       text: body,
     });
-    return { error: error?.message ?? null };
+    if (error) {
+      const msg = typeof error === "object" && error !== null && "message" in error
+        ? String((error as { message?: unknown }).message)
+        : String(error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[email] Resend send failed:", msg, error);
+      }
+      return { error: msg || "Failed to send email" };
+    }
+    if (process.env.NODE_ENV === "development" && data?.id) {
+      console.log("[email] Application notification sent, id:", data.id);
+    }
+    return { error: null };
   } catch (err) {
-    return {
-      error: err instanceof Error ? err.message : "Failed to send email",
-    };
+    const message = err instanceof Error ? err.message : "Failed to send email";
+    if (process.env.NODE_ENV === "development") {
+      console.error("[email] Resend exception:", err);
+    }
+    return { error: message };
   }
 }

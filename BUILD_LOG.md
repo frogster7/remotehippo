@@ -402,6 +402,38 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Profile, CV, navbar, apply UX (plan implementation)
+
+**What was done:**
+
+- **Lock role:** Profile form no longer lets users switch between Job seeker and Employer. Role is shown as read-only text; `updateProfile` no longer accepts or updates `role` (server reads current role from DB for company fields).
+- **Company logo on apply form:** Application form card shows employer logo (or initials) next to "Apply for {job.title}" in the header.
+- **Second Apply CTA:** Job detail page has an apply card at the bottom of the main column (below Description), reusing the same apply link/note; Share stays in sidebar only.
+- **Navbar account dropdown:** Added `components/ui/dropdown-menu.tsx` (Radix). When logged in: Jobs and Blog are in the header **left** next to the logo; right side has heart icon (link to /saved-jobs), Dashboard (if employer), and a single **account** control (User icon + first name as one button) opening a dropdown with Edit, Saved Jobs, Sign out. First name comes from profile `full_name` (first word). Mobile sheet still lists Jobs, Blog, Saved Jobs, Dashboard, Edit, Sign out.
+- **Up to 3 CVs per user:** Migration `008_user_cvs.sql` – table `user_cvs` (id, user_id, storage_path, display_name, created_at), RLS, backfill from `profiles.cv_file_url`, then drop `profiles.cv_file_url`. Profile page loads CVs from `user_cvs`; profile form shows list (download + delete per CV), "Add CV" when count < 3. Actions: `addCvToUserCvs`, `deleteCvFromUserCvs`. Apply flow uses first CV from `user_cvs` when no file/chosen path.
+- **Apply form: attach CV from form or saved:** Submit action accepts `FormData` with optional `cv_file` (upload) or `cv_path` (chosen saved CV). If file provided, upload to storage and use path; else if chosen path (validated against user_cvs), use it; else first from user_cvs. Apply form: "CV for this application" – radio list of saved CVs (if any) plus "Or upload a different file"; if no saved CVs, file upload only. Submit sends FormData; application stores chosen/uploaded path in `applications.cv_url`.
+- **Typography:** Open Sans (body) and Work Sans (headings) via `next/font/google`; CSS variables on `<html>`, body uses Open Sans, h1–h6 use `font-heading` (Work Sans) and `text-heading` (#202557). h2 font-size 18px in `globals.css`. Tailwind: `font-sans` = Open Sans, `font-heading` = Work Sans, `heading` color.
+- **Header layout:** Logo + Jobs + Blog on the **left** (header.tsx); right side is HeaderNav only (heart, Dashboard, account dropdown). Nav bar font size increased to `text-base`.
+- **Homepage hero:** Work time moved **below** the Specializations / Popular technologies / Work mode card. Work time is a **link-style** control (text + chevron) that opens a dropdown (Any, Full-time, Part-time, etc.), not a button. Location on home hero remains a **Select** (Any location, Remote, Berlin, London, etc.). Jobs filter location remains a plain **Input** (type only).
+
+**Key files:**
+
+- `app/profile/profile-form.tsx`, `app/profile/actions.ts` – role locked; CV list from user_cvs.
+- `app/profile/page.tsx` – fetches user_cvs, passes `cvs` to form.
+- `supabase/migrations/008_user_cvs.sql` – user_cvs table, backfill, drop cv_file_url.
+- `lib/types.ts` – Profile without cv_file_url; UserCv type.
+- `app/_components/header.tsx` – logo + Jobs + Blog left; `app/_components/header-nav.tsx` – heart, account dropdown, first name in trigger.
+- `app/jobs/[slug]/apply/page.tsx`, `application-form.tsx`, `apply/actions.ts` – FormData, saved CVs list, optional file or chosen path; company logo in form.
+- `app/jobs/[slug]/page.tsx` – bottom apply CTA card.
+- `app/layout.tsx` – Open_Sans, Work_Sans, variable classes on html.
+- `app/globals.css` – h1–h6 font-heading text-heading; h2 font-size 18px.
+- `tailwind.config.ts` – fontFamily.sans, fontFamily.heading; color heading.
+- `app/_components/home-hero.tsx` – Work time link + dropdown below card; location Select unchanged.
+
+**Notes:** Run migration 008 in Supabase SQL Editor (create user_cvs, backfill, drop profiles.cv_file_url). Resend: set `RESEND_API_KEY` (and optionally `RESEND_FROM`) for application emails. Blog link goes to `/blog` (placeholder page).
+
+---
+
 ## Quick reference
 
 | Need to…                                    | Look at…                                                                                                                                                    |
@@ -426,5 +458,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Add UI components                           | `npx shadcn@latest add <component>`, `components/ui/`                                                                                                       |
 | Supabase client in component                | Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await).                                                                                 |
 | Dual registration, profiles, storage, apply | Migrations 006–007, `lib/types.ts`, `lib/storage.ts`, `lib/email.ts`, `app/register/*`, `app/profile/*`, `app/jobs/[slug]/apply/*`.                         |
-| Hydration (extension-injected attributes)  | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`. |
-| Next.js Image + Supabase storage           | `next.config.ts` (images.remotePatterns for *.supabase.co).                                                                                                |
+| User CVs (up to 3), apply with file/saved   | Migration 008, `user_cvs` table, `app/profile/*`, `app/jobs/[slug]/apply/*`, `lib/types.ts`.                                                                  |
+| Header (Jobs, Blog, account, heart)         | `app/_components/header.tsx`, `app/_components/header-nav.tsx`, `components/ui/dropdown-menu.tsx`.                                                            |
+| Fonts, heading color                         | `app/layout.tsx` (Open_Sans, Work_Sans), `app/globals.css`, `tailwind.config.ts`.                                                                             |
+| Hydration (extension-injected attributes)   | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`.   |
+| Next.js Image + Supabase storage            | `next.config.ts` (images.remotePatterns for \*.supabase.co).                                                                                                |

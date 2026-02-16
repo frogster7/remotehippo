@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createSignedCvUrl } from "@/lib/storage";
+import { getCvFileName } from "@/lib/utils";
 import type { ApplicationPreference, Profile as ProfileType } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 
@@ -23,16 +24,29 @@ export default async function ProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, role, full_name, last_name, phone_number, cv_file_url, company_name, company_website, company_logo_url, company_about, company_location, application_preference"
+      "id, role, full_name, last_name, phone_number, company_name, company_website, company_logo_url, company_about, company_location, application_preference"
     )
     .eq("id", user.id)
     .single();
 
-  let cvDownloadUrl: string | null = null;
-  if (profile?.cv_file_url) {
-    const { url } = await createSignedCvUrl(supabase, profile.cv_file_url, 3600);
-    cvDownloadUrl = url;
-  }
+  const { data: cvsRows } = await supabase
+    .from("user_cvs")
+    .select("id, storage_path, display_name, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  const cvs =
+    cvsRows?.map(async (row) => {
+      const { url } = await createSignedCvUrl(supabase, row.storage_path, 3600);
+      return {
+        id: row.id,
+        storage_path: row.storage_path,
+        display_name: row.display_name ?? null,
+        downloadUrl: url ?? null,
+        fileName: getCvFileName(row.storage_path),
+      };
+    }) ?? [];
+  const cvsWithUrls = await Promise.all(cvs);
 
   const profileData: ProfileType = {
     id: profile?.id ?? user.id,
@@ -40,7 +54,6 @@ export default async function ProfilePage() {
     full_name: profile?.full_name ?? null,
     last_name: profile?.last_name ?? null,
     phone_number: profile?.phone_number ?? null,
-    cv_file_url: profile?.cv_file_url ?? null,
     company_name: profile?.company_name ?? null,
     company_website: profile?.company_website ?? null,
     company_logo_url: profile?.company_logo_url ?? null,
@@ -69,7 +82,7 @@ export default async function ProfilePage() {
         </div>
         <ProfileForm
           profile={profileData}
-          cvDownloadUrl={cvDownloadUrl}
+          cvs={cvsWithUrls}
         />
       </div>
     </main>

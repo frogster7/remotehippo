@@ -4,7 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getJobBySlug } from "@/lib/jobs";
 import { createSignedCvUrl } from "@/lib/storage";
-import { ApplicationForm, getCvFileName } from "./application-form";
+import { getCvFileName } from "@/lib/utils";
+import { ApplicationForm } from "./application-form";
 import { ArrowLeft } from "lucide-react";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -38,16 +39,33 @@ export default async function ApplyPage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, last_name, phone_number, cv_file_url")
+    .select("full_name, last_name, phone_number")
     .eq("id", user.id)
     .single();
 
-  let cvDownloadUrl: string | null = null;
-  const cvPath = profile?.cv_file_url ?? null;
-  if (cvPath) {
-    const { url } = await createSignedCvUrl(supabase, cvPath, 3600);
-    cvDownloadUrl = url;
-  }
+  const { data: cvsRows } = await supabase
+    .from("user_cvs")
+    .select("id, storage_path, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  const savedCvs =
+    (await Promise.all(
+      (cvsRows ?? []).map(async (row) => {
+        const { url } = await createSignedCvUrl(supabase, row.storage_path, 3600);
+        return {
+          id: row.id,
+          storage_path: row.storage_path,
+          fileName: getCvFileName(row.storage_path),
+          downloadUrl: url ?? null,
+        };
+      })
+    )) ?? [];
+
+  const firstCv = savedCvs[0] ?? null;
+  const cvDownloadUrl = firstCv?.downloadUrl ?? null;
+  const cvFileName = firstCv?.fileName ?? "";
+  const hasCv = savedCvs.length > 0;
 
   const prefilledName = profile?.full_name?.trim() ?? "";
   const prefilledLastName = profile?.last_name?.trim() ?? "";
@@ -80,9 +98,10 @@ export default async function ApplyPage({ params }: Props) {
           prefilledLastName={prefilledLastName}
           prefilledEmail={prefilledEmail}
           prefilledPhone={prefilledPhone}
-          hasCv={!!cvPath}
+          hasCv={hasCv}
           cvDownloadUrl={cvDownloadUrl}
-          cvFileName={cvPath ? getCvFileName(cvPath) : ""}
+          cvFileName={cvFileName}
+          savedCvs={savedCvs}
         />
       </div>
     </main>

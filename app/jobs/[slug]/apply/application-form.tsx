@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Image from "next/image";
 import { submitApplication } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,14 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import type { Job } from "@/lib/types";
+import { CV_ALLOWED_EXTENSIONS, isAllowedCvFileName } from "@/lib/storage";
+
+export type SavedCvOption = {
+  id: string;
+  storage_path: string;
+  fileName: string;
+  downloadUrl: string | null;
+};
 
 type ApplicationFormProps = {
   job: Job;
@@ -27,14 +36,10 @@ type ApplicationFormProps = {
   hasCv: boolean;
   cvDownloadUrl: string | null;
   cvFileName: string;
+  savedCvs: SavedCvOption[];
 };
 
-function getCvFileName(path: string): string {
-  const parts = path.split("/");
-  const full = parts[parts.length - 1] ?? "";
-  const withoutTimestamp = full.replace(/^\d+-/, "");
-  return decodeURIComponent(withoutTimestamp) || "CV";
-}
+const CV_ACCEPT = ".pdf,.doc,.docx";
 
 export function ApplicationForm({
   job,
@@ -46,35 +51,64 @@ export function ApplicationForm({
   hasCv,
   cvDownloadUrl,
   cvFileName,
+  savedCvs,
 }: ApplicationFormProps) {
   const router = useRouter();
+  const cvInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(prefilledName);
   const [lastName, setLastName] = useState(prefilledLastName);
   const [email, setEmail] = useState(prefilledEmail);
   const [phone, setPhone] = useState(prefilledPhone);
   const [coverLetter, setCoverLetter] = useState("");
+  const [selectedCvPath, setSelectedCvPath] = useState<string | null>(
+    savedCvs[0]?.storage_path ?? null
+  );
+  const [attachFile, setAttachFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [emailSent, setEmailSent] = useState(true);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  const hasCvSource = hasCv || attachFile !== null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await submitApplication(slug, {
-      applicant_name: name.trim(),
-      applicant_last_name: lastName.trim(),
-      applicant_email: email.trim(),
-      applicant_phone: phone.trim(),
-      cover_letter_text: coverLetter.trim() || null,
-    });
+    const formData = new FormData();
+    formData.set("applicant_name", name.trim());
+    formData.set("applicant_last_name", lastName.trim());
+    formData.set("applicant_email", email.trim());
+    formData.set("applicant_phone", phone.trim());
+    formData.set("cover_letter_text", coverLetter.trim());
+    if (attachFile) {
+      formData.set("cv_file", attachFile);
+    } else if (selectedCvPath) {
+      formData.set("cv_path", selectedCvPath);
+    }
+    const result = await submitApplication(slug, formData);
     setLoading(false);
     if (result.error) {
       setError(result.error);
       return;
     }
+    setEmailSent(result.emailSent ?? false);
+    setEmailError(result.emailError ?? null);
     setSuccess(true);
     router.refresh();
+  }
+
+  function handleCvFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!isAllowedCvFileName(file.name)) {
+      setError(`Allowed formats: ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
+      return;
+    }
+    setError(null);
+    setAttachFile(file);
   }
 
   const companyName =
@@ -86,8 +120,12 @@ export function ApplicationForm({
         <CardHeader>
           <CardTitle>Application sent</CardTitle>
           <CardDescription>
-            Your application for {job.title} at {companyName} has been
-            submitted. The employer will be notified.
+            Your application for {job.title} at {companyName} has been submitted.
+            {emailSent
+              ? " The employer will be notified by email."
+              : emailError
+                ? ` The notification email could not be sent: ${emailError}. The employer may still see your application in their dashboard.`
+                : " Notification email was not sent (not configured). The employer may still see your application in their dashboard."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,22 +140,31 @@ export function ApplicationForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Apply for {job.title}</CardTitle>
-        <CardDescription>
-          {companyName} will receive your details and CV. You can add a cover
-          letter below.
-        </CardDescription>
+        <div className="flex items-center gap-3">
+          {job.employer?.company_logo_url ? (
+            <Image
+              src={job.employer.company_logo_url}
+              alt=""
+              width={48}
+              height={48}
+              className="rounded-lg object-cover shrink-0"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium text-muted-foreground">
+              {companyName.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <CardTitle>Apply for {job.title}</CardTitle>
+            <CardDescription>
+              {companyName} will receive your details and CV. You can add a
+              cover letter below.
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        {!hasCv && (
-          <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 p-3 rounded-md mb-4">
-            Add a CV in your{" "}
-            <Link href="/profile" className="underline font-medium">
-              profile
-            </Link>{" "}
-            before applying.
-          </p>
-        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
@@ -173,30 +220,82 @@ export function ApplicationForm({
               autoComplete="tel"
             />
           </div>
-          {hasCv && (
-            <div className="rounded-lg bg-muted/50 p-3 text-sm">
-              <span className="font-medium">CV: </span>
-              {cvDownloadUrl ? (
-                <a
-                  href={cvDownloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  {cvFileName}
-                </a>
-              ) : (
-                <span>{cvFileName}</span>
+          <div className="space-y-2">
+            <Label>CV for this application</Label>
+            <p className="text-sm text-muted-foreground">
+              Use a saved CV from your profile or upload one for this application only.
+            </p>
+            {savedCvs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Saved CVs</p>
+                <div className="flex flex-col gap-2">
+                  {savedCvs.map((cv) => (
+                    <label
+                      key={cv.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50"
+                    >
+                      <input
+                        type="radio"
+                        name="cv_choice"
+                        value={cv.storage_path}
+                        checked={!attachFile && selectedCvPath === cv.storage_path}
+                        onChange={() => {
+                          setSelectedCvPath(cv.storage_path);
+                          setAttachFile(null);
+                        }}
+                        disabled={loading}
+                        className="rounded-full border-input"
+                      />
+                      <span className="text-sm truncate flex-1">{cv.fileName}</span>
+                      {cv.downloadUrl && (
+                        <a
+                          href={cv.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Preview
+                        </a>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {savedCvs.length > 0 ? "Or upload a different file for this application" : "Upload a file"}
+              </p>
+              <input
+                ref={cvInputRef}
+                type="file"
+                accept={CV_ACCEPT}
+                className="hidden"
+                onChange={handleCvFileChange}
+                disabled={loading}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => cvInputRef.current?.click()}
+                disabled={loading}
+              >
+                {attachFile ? attachFile.name : "Choose file"}
+              </Button>
+              {attachFile && (
+                <span className="text-sm text-muted-foreground block">
+                  This file will be used for this application only (not saved to your profile).
+                </span>
               )}
-              <span className="text-muted-foreground ml-1">
-                (from your{" "}
-                <Link href="/profile" className="underline">
-                  profile
-                </Link>
-                )
-              </span>
             </div>
-          )}
+            {!hasCvSource && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                Choose a saved CV or upload a file to continue.
+              </p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="cover_letter">Cover letter (optional)</Label>
             <Textarea
@@ -209,7 +308,7 @@ export function ApplicationForm({
               className="resize-none"
             />
           </div>
-          <Button type="submit" disabled={loading || !hasCv}>
+          <Button type="submit" disabled={loading || !hasCvSource}>
             {loading ? "Sending…" : "Submit application"}
           </Button>
         </form>
@@ -217,5 +316,3 @@ export function ApplicationForm({
     </Card>
   );
 }
-
-export { getCvFileName };

@@ -16,7 +16,6 @@ export interface Profile {
   full_name: string | null;
   last_name: string | null;
   phone_number: string | null;
-  cv_file_url: string | null;
   company_name: string | null;
   company_website: string | null;
   company_logo_url: string | null;
@@ -25,10 +24,19 @@ export interface Profile {
   application_preference: ApplicationPreference | null;
 }
 
+/** Single CV row from user_cvs table. */
+export interface UserCv {
+  id: string;
+  user_id: string;
+  storage_path: string;
+  display_name: string | null;
+  created_at: string;
+}
+
 /** Job seeker profile fields (subset of Profile). */
 export type UserProfile = Pick<
   Profile,
-  "id" | "role" | "full_name" | "last_name" | "phone_number" | "cv_file_url"
+  "id" | "role" | "full_name" | "last_name" | "phone_number"
 >;
 
 /** Employer/company profile fields (subset of Profile). */

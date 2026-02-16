@@ -164,7 +164,7 @@ export default async function JobDetailPage({ params }: Props) {
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h1 className="text-xl font-semibold tracking-tight text-[#2d2d2d] md:text-2xl">
+                    <h1 className="text-xl font-semibold tracking-tight text-heading md:text-2xl">
                       {job.title}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">{job.role}</p>
@@ -232,7 +232,7 @@ export default async function JobDetailPage({ params }: Props) {
             {(job.tech_stack?.length ?? 0) > 0 && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/40">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-3">Technologies we use</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-3">Technologies we use</h3>
                   <div className="flex flex-wrap gap-2">
                     {job.tech_stack.map((t) => (
                       <span
@@ -251,7 +251,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.summary?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/40">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Summary</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Summary</h3>
                   <SectionContent text={job.summary} />
                 </CardContent>
               </Card>
@@ -259,7 +259,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.responsibilities?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/30">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Responsibilities</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Responsibilities</h3>
                   <SectionContent text={job.responsibilities} />
                 </CardContent>
               </Card>
@@ -267,7 +267,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.requirements?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/30">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Requirements</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Requirements</h3>
                   <SectionContent text={job.requirements} />
                 </CardContent>
               </Card>
@@ -275,7 +275,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.what_we_offer?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/30">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">What we offer</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">What we offer</h3>
                   <SectionContent text={job.what_we_offer} />
                 </CardContent>
               </Card>
@@ -283,7 +283,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.good_to_have?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/20">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Good to have</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Good to have</h3>
                   <SectionContent text={job.good_to_have} />
                 </CardContent>
               </Card>
@@ -291,7 +291,7 @@ export default async function JobDetailPage({ params }: Props) {
             {job.benefits?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm border-l-4 border-l-primary/20">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Benefits</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Benefits</h3>
                   <SectionContent text={job.benefits} />
                 </CardContent>
               </Card>
@@ -301,10 +301,41 @@ export default async function JobDetailPage({ params }: Props) {
             {job.description?.trim() && (
               <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-semibold text-[#4A4A4A] mb-2">Description</h3>
+                  <h3 className="text-sm font-semibold text-heading mb-2">Description</h3>
                   <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground whitespace-pre-wrap">
                     {job.description}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Apply CTA at bottom of main column */}
+            {applyProps && (
+              <Card className="overflow-hidden rounded-xl border bg-card shadow-sm">
+                <CardContent className="p-6">
+                  {applyProps.isClosed ? (
+                    <p className="text-sm text-muted-foreground">
+                      This position has been filled. Applications are no longer accepted.
+                    </p>
+                  ) : (
+                    <>
+                      {applyProps.applyHref && (
+                        <Button asChild size="lg" className="w-full rounded-lg">
+                          <Link
+                            href={applyProps.applyHref}
+                            {...(applyProps.applyHref.startsWith("http")
+                              ? { target: "_blank", rel: "noopener noreferrer" as const }
+                              : {})}
+                          >
+                            {applyProps.applyLabel}
+                          </Link>
+                        </Button>
+                      )}
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {applyProps.applyNote}
+                      </p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             )}

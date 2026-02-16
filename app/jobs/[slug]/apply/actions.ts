@@ -3,19 +3,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getJobBySlug } from "@/lib/jobs";
-import { createSignedCvUrl } from "@/lib/storage";
+import { createSignedCvUrl, uploadCv } from "@/lib/storage";
 import { sendApplicationNotification } from "@/lib/email";
+
+export type SubmitApplicationResult = {
+  error: string | null;
+  emailSent?: boolean;
+  emailError?: string | null;
+};
 
 export async function submitApplication(
   slug: string,
-  formData: {
-    applicant_name: string;
-    applicant_last_name: string;
-    applicant_email: string;
-    applicant_phone: string;
-    cover_letter_text?: string | null;
-  }
-): Promise<{ error: string | null }> {
+  formData: FormData
+): Promise<SubmitApplicationResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,23 +32,47 @@ export async function submitApplication(
     return { error: "Applications are not accepted through this form." };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, last_name, phone_number, cv_file_url")
-    .eq("id", user.id)
-    .single();
-
-  const cvPath = profile?.cv_file_url ?? null;
-  if (!cvPath) {
-    return { error: "Please add a CV in your profile before applying." };
-  }
-
-  const name = (formData.applicant_name ?? "").trim();
-  const lastName = (formData.applicant_last_name ?? "").trim();
-  const email = (formData.applicant_email ?? "").trim();
-  const phone = (formData.applicant_phone ?? "").trim();
+  const name = String(formData.get("applicant_name") ?? "").trim();
+  const lastName = String(formData.get("applicant_last_name") ?? "").trim();
+  const email = String(formData.get("applicant_email") ?? "").trim();
+  const phone = String(formData.get("applicant_phone") ?? "").trim();
+  const coverLetterText = String(formData.get("cover_letter_text") ?? "").trim() || null;
   if (!name || !lastName || !email) {
     return { error: "Name, last name, and email are required." };
+  }
+
+  const cvFile = formData.get("cv_file") as File | null;
+  const chosenCvPath = formData.get("cv_path") ? String(formData.get("cv_path")).trim() : null;
+
+  let cvPath: string | null = null;
+
+  if (cvFile?.size && cvFile.size > 0) {
+    const { path, error: uploadError } = await uploadCv(supabase, user.id, cvFile);
+    if (uploadError) return { error: uploadError };
+    cvPath = path;
+  } else if (chosenCvPath) {
+    const { data: row } = await supabase
+      .from("user_cvs")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .eq("storage_path", chosenCvPath)
+      .single();
+    if (row) cvPath = row.storage_path;
+  }
+
+  if (!cvPath) {
+    const { data: firstCv } = await supabase
+      .from("user_cvs")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .single();
+    cvPath = firstCv?.storage_path ?? null;
+  }
+
+  if (!cvPath) {
+    return { error: "Please choose a saved CV or upload a file for this application." };
   }
 
   const { data: existing } = await supabase
@@ -78,14 +102,14 @@ export async function submitApplication(
     applicant_email: email,
     applicant_phone: phone || "",
     cv_url: cvPath,
-    cover_letter_text: (formData.cover_letter_text ?? "").trim() || null,
+    cover_letter_text: coverLetterText,
     status: "pending",
   });
   if (insertError) {
     return { error: insertError.message };
   }
 
-  const emailError = await sendApplicationNotification({
+  const emailResult = await sendApplicationNotification({
     to: job.application_email,
     jobTitle: job.title,
     companyName:
@@ -94,13 +118,17 @@ export async function submitApplication(
     applicantLastName: lastName,
     applicantEmail: email,
     applicantPhone: phone,
-    coverLetter: (formData.cover_letter_text ?? "").trim() || null,
+    coverLetter: coverLetterText,
     cvDownloadUrl: cvDownloadUrl || null,
   });
-  if (emailError.error) {
-    // Application is saved; log email failure but don't fail the action
-    console.error("[apply] Failed to send notification email:", emailError.error);
+  if (emailResult.error) {
+    console.error("[apply] Failed to send notification email:", emailResult.error);
   }
 
-  return { error: null };
+  const emailSent = !emailResult.skipped && !emailResult.error;
+  return {
+    error: null,
+    emailSent,
+    emailError: emailResult.error ?? null,
+  };
 }

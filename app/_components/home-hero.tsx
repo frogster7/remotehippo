@@ -12,6 +12,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 import { HydrationSafeDiv } from "@/components/hydration-safe-div";
 import { cn } from "@/lib/utils";
 import type { WorkType, JobType } from "@/lib/types";
@@ -85,7 +92,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
         <HydrationSafeDiv className="grid gap-8 lg:grid-cols-[1fr,minmax(280px,0.4fr)] lg:gap-12">
           {/* Left: content & search */}
           <HydrationSafeDiv>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#4A4A4A] md:text-3xl lg:text-4xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-heading md:text-3xl lg:text-4xl">
               Hello World. Hello new job
             </h1>
             <p className="mt-4 text-lg text-[#4A4A4A] md:text-xl">
@@ -140,31 +147,11 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   Search
                 </Button>
               </HydrationSafeDiv>
-              <HydrationSafeDiv className="mt-2 flex items-center gap-2">
-                <Select
-                  value={workTime || "__any__"}
-                  onValueChange={(v) =>
-                    setWorkTime(v === "__any__" ? "" : (v as JobType))
-                  }
-                >
-                  <SelectTrigger className="h-9 w-[160px] rounded-lg border border-input bg-background">
-                    <SelectValue placeholder="Work time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__any__">Work time</SelectItem>
-                    {JOB_TYPES.map(({ value, label }) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </HydrationSafeDiv>
             </form>
 
             {/* Specializations & Popular technologies card */}
             <HydrationSafeDiv className="mt-6 rounded-xl border bg-card p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-[#4A4A4A]">
+              <h3 className="text-sm font-semibold text-heading">
                 Specializations
               </h3>
               <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
@@ -187,7 +174,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </HydrationSafeDiv>
-              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
+              <h3 className="mt-6 text-sm font-semibold text-heading">
                 Popular technologies
               </h3>
               <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
@@ -210,7 +197,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </HydrationSafeDiv>
-              <h3 className="mt-6 text-sm font-semibold text-[#4A4A4A]">
+              <h3 className="mt-6 text-sm font-semibold text-heading">
                 Work mode
               </h3>
               <HydrationSafeDiv className="mt-3 flex flex-wrap gap-2">
@@ -233,6 +220,41 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                   );
                 })}
               </HydrationSafeDiv>
+            </HydrationSafeDiv>
+
+            {/* Work time: link with dropdown (below specializations card) */}
+            <HydrationSafeDiv className="mt-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-base font-medium text-primary hover:underline focus:outline-none focus:underline"
+                  >
+                    {workTime
+                      ? JOB_TYPES.find((t) => t.value === workTime)?.label ??
+                        workTime
+                      : "Work time"}
+                    <ChevronDown className="h-4 w-4 shrink-0" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[160px]">
+                  <DropdownMenuItem
+                    onClick={() => setWorkTime("")}
+                    className="cursor-pointer"
+                  >
+                    Any
+                  </DropdownMenuItem>
+                  {JOB_TYPES.map(({ value, label }) => (
+                    <DropdownMenuItem
+                      key={value}
+                      onClick={() => setWorkTime(value)}
+                      className="cursor-pointer"
+                    >
+                      {label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </HydrationSafeDiv>
           </HydrationSafeDiv>
 

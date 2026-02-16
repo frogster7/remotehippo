@@ -13,8 +13,8 @@ import {
 } from "@/lib/storage";
 import {
   updateProfile,
-  uploadCvAndUpdateProfile,
-  deleteCvAndUpdateProfile,
+  addCvToUserCvs,
+  deleteCvFromUserCvs,
   uploadLogoAndUpdateProfile,
   deleteLogoAndUpdateProfile,
   type ProfileUpdateData,
@@ -50,12 +50,20 @@ function getCvFileName(path: string | null): string {
   return decodeURIComponent(withoutTimestamp) || "CV";
 }
 
+export type CvWithUrl = {
+  id: string;
+  storage_path: string;
+  display_name: string | null;
+  downloadUrl: string | null;
+  fileName: string;
+};
+
 export function ProfileForm({
   profile,
-  cvDownloadUrl,
+  cvs,
 }: {
   profile: Profile;
-  cvDownloadUrl: string | null;
+  cvs: CvWithUrl[];
 }) {
   const router = useRouter();
   const cvInputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +97,6 @@ export function ProfileForm({
     full_name: fullName.trim() || null,
     last_name: lastName.trim() || null,
     phone_number: phoneNumber.trim() || null,
-    role,
     company_name: role === "employer" ? (companyName.trim() || null) : null,
     company_website:
       role === "employer" ? (companyWebsite.trim() || null) : null,
@@ -98,9 +105,7 @@ export function ProfileForm({
     company_location:
       role === "employer" ? (companyLocation.trim() || null) : null,
     application_preference:
-      role === "employer"
-        ? (applicationPreference || null)
-        : null,
+      role === "employer" ? (applicationPreference || null) : null,
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,7 +134,7 @@ export function ProfileForm({
     setCvLoading(true);
     const formData = new FormData();
     formData.set("file", file);
-    const result = await uploadCvAndUpdateProfile(formData);
+    const result = await addCvToUserCvs(formData);
     setCvLoading(false);
     if (result.error) {
       setError(result.error);
@@ -139,10 +144,10 @@ export function ProfileForm({
     router.refresh();
   }
 
-  async function handleDeleteCv() {
+  async function handleDeleteCv(cvId: string) {
     setError(null);
     setCvLoading(true);
-    const result = await deleteCvAndUpdateProfile();
+    const result = await deleteCvFromUserCvs(cvId);
     setCvLoading(false);
     if (result.error) {
       setError(result.error);
@@ -190,8 +195,8 @@ export function ProfileForm({
     window.location.href = "/";
   }
 
-  const hasCv = !!profile.cv_file_url;
   const hasLogo = !!profile.company_logo_url;
+  const maxCvsReached = cvs.length >= 3;
 
   return (
     <div className="space-y-6">
@@ -255,35 +260,11 @@ export function ProfileForm({
                 disabled={loading}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="job_seeker"
-                    checked={role === "job_seeker"}
-                    onChange={() => setRole("job_seeker")}
-                    disabled={loading}
-                    className="rounded-full border-input"
-                  />
-                  <span className="text-sm">Job seeker</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="employer"
-                    checked={role === "employer"}
-                    onChange={() => setRole("employer")}
-                    disabled={loading}
-                    className="rounded-full border-input"
-                  />
-                  <span className="text-sm">Employer</span>
-                </label>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {role === "employer"
+                ? "Employer account"
+                : "You're registered as a Job seeker"}
+            </p>
             {role === "employer" && (
               <>
                 <div className="space-y-2">
@@ -371,56 +352,45 @@ export function ProfileForm({
               CV / Resume
             </CardTitle>
             <CardDescription>
-              Upload a PDF, DOC, or DOCX (max 10 MB). Used when you apply to jobs.
+              Upload up to 3 CVs (PDF, DOC, or DOCX, max 10 MB each). Used when you apply to jobs.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hasCv ? (
-              <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <span className="text-sm font-medium truncate max-w-[200px]">
-                  {getCvFileName(profile.cv_file_url)}
-                </span>
-                {cvDownloadUrl && (
-                  <a
-                    href={cvDownloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
+            {cvs.length > 0 && (
+              <ul className="space-y-2">
+                {cvs.map((cv) => (
+                  <li
+                    key={cv.id}
+                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50"
                   >
-                    Download
-                  </a>
-                )}
-                <div className="flex gap-2 ml-auto">
-                  <input
-                    ref={cvInputRef}
-                    type="file"
-                    accept={CV_ACCEPT}
-                    className="hidden"
-                    onChange={handleCvChange}
-                    disabled={cvLoading}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => cvInputRef.current?.click()}
-                    disabled={cvLoading}
-                  >
-                    {cvLoading ? "Uploading…" : "Replace"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDeleteCv}
-                    disabled={cvLoading}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
+                    <span className="text-sm font-medium truncate max-w-[200px]">
+                      {cv.fileName}
+                    </span>
+                    {cv.downloadUrl && (
+                      <a
+                        href={cv.downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Download
+                      </a>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCv(cv.id)}
+                      disabled={cvLoading}
+                      className="ml-auto text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!maxCvsReached && (
               <div>
                 <input
                   ref={cvInputRef}
@@ -436,7 +406,7 @@ export function ProfileForm({
                   onClick={() => cvInputRef.current?.click()}
                   disabled={cvLoading}
                 >
-                  {cvLoading ? "Uploading…" : "Upload CV"}
+                  {cvLoading ? "Uploading…" : "Add CV"}
                 </Button>
               </div>
             )}
