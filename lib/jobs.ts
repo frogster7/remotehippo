@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Job, JobFilters } from "@/lib/types";
+import type { ApplicationWithJob, Job, JobFilters } from "@/lib/types";
 
 /** Fetch active jobs with optional filters. Used for /jobs list. */
 export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
@@ -135,9 +135,7 @@ export async function getEmployerIdsWithActiveJobs(): Promise<string[]> {
 }
 
 /** Employers worth knowing: recent employers with active jobs (for homepage). */
-export async function getEmployersForHomepage(
-  limit = 8,
-): Promise<
+export async function getEmployersForHomepage(limit = 8): Promise<
   {
     id: string;
     company_name: string | null;
@@ -353,4 +351,48 @@ export async function getFavoritedJobIds(
 
   if (error || !data) return new Set();
   return new Set(data.map((row) => row.job_id));
+}
+
+/** Get all applications for an applicant with job and employer. Used for My Applications page. */
+export async function getApplicationsByApplicant(
+  userId: string,
+): Promise<ApplicationWithJob[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("applications")
+    .select(
+      `
+      id, status, applied_at,
+      jobs (
+        id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+        salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+        created_at, updated_at,
+        profiles(id, full_name, company_name, company_website, company_logo_url)
+      )
+    `,
+    )
+    .eq("applicant_id", userId)
+    .order("applied_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data
+    .filter((row) => row.jobs) // filter out deleted jobs
+    .map((row) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const job = row.jobs as any;
+      const { profiles, ...rest } = job;
+      const jobWithEmployer = {
+        ...rest,
+        employer: profiles ?? undefined,
+      } as Job;
+      return {
+        id: row.id,
+        status: row.status,
+        applied_at: row.applied_at,
+        job: jobWithEmployer,
+      } as ApplicationWithJob;
+    });
 }

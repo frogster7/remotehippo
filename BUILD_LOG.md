@@ -434,6 +434,51 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## My Applications page
+
+**What was done:**
+
+- **Data layer:** `lib/jobs.ts` – `getApplicationsByApplicant(userId)` fetches applications with nested `jobs(...)` and `jobs.profiles(...)` (same job/employer shape as getFavoritedJobs), ordered by `applied_at` desc. Returns `ApplicationWithJob[]` (id, status, applied_at, job with employer).
+- **Types:** `lib/types.ts` – `ApplicationWithJob` (id, status, applied_at, job: Job).
+- **Page:** `app/my-applications/page.tsx` – server page; redirect to login if not authenticated; lists user's applications as cards (company logo, job title link to `/jobs/[slug]`, company name, work_type/job_type/role/salary/location badges, tech stack); each card shows "Applied X ago" (`formatRelativeTime`) and status badge; empty state with link to browse jobs.
+- **Navigation:** Account dropdown and mobile sheet – "My applications" link (below Saved Jobs).
+- **Loading:** `app/my-applications/loading.tsx` – skeleton list. **Robots:** `/my-applications` in disallow list.
+
+**Key files:**
+
+- `lib/types.ts` (ApplicationWithJob), `lib/jobs.ts` (getApplicationsByApplicant).
+- `app/my-applications/page.tsx`, `app/my-applications/loading.tsx`.
+- `app/_components/header-nav.tsx` (My applications link), `app/robots.ts`.
+
+**Notes:** Only in-app applications (submitted via apply form) appear. Status displayed as stored (e.g. pending) with simple capitalization.
+
+---
+
+## Saved Searches
+
+**What was done:**
+
+- **Database:** Migration `009_saved_searches.sql` – table `saved_searches` (id, user_id → profiles, name, filters jsonb, created_at), index on user_id, RLS (users SELECT/INSERT/DELETE own rows).
+- **Types:** `lib/types.ts` – `SavedSearch` (id, user_id, name, filters: JobFilters, created_at).
+- **Shared filter helpers:** `lib/job-filters.ts` – `parseFilters`, `buildJobsQueryString`, `getParamArray`, `formatFiltersSummary`; used by jobs page and saved-searches so URLs match.
+- **Data layer:** `lib/saved-searches.ts` – `getSavedSearches(userId)`, `createSavedSearch(userId, name, filters)` (max 20 per user, name max 200 chars), `deleteSavedSearch(id, userId)`.
+- **Jobs page:** `app/jobs/page.tsx` uses `parseFilters`/`buildJobsQueryString` from `lib/job-filters`; passes `isLoggedIn` to JobsFilter. **Save button:** `app/jobs/save-search-button.tsx` – "Save this search" in a Dialog (name input); placed at bottom of **Active filters** card in `app/jobs/jobs-filter.tsx` when user is logged in and has active filters.
+- **Actions:** `app/saved-searches/actions.ts` – `createSavedSearchAction(name, filters)`, `deleteSavedSearchAction(id)`; auth check, revalidatePath `/saved-searches`.
+- **Saved searches page:** `app/saved-searches/page.tsx` – server page; redirect if not logged in; list of saved searches (name, filter summary, "Run search" → `/jobs?…`, delete button); empty state with link to browse jobs. `app/saved-searches/delete-search-button.tsx` – client delete with confirm, router.refresh().
+- **Navigation:** Account dropdown and mobile sheet – "Saved searches" below "My applications".
+- **Loading:** `app/saved-searches/loading.tsx`. **Robots:** `/saved-searches` in disallow. **UI:** `components/ui/dialog.tsx` (Radix Dialog for save-search modal).
+
+**Key files:**
+
+- `supabase/migrations/009_saved_searches.sql`, `lib/types.ts` (SavedSearch), `lib/job-filters.ts`, `lib/saved-searches.ts`.
+- `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx` (isLoggedIn, SaveSearchButton in Active filters card), `app/jobs/save-search-button.tsx`.
+- `app/saved-searches/actions.ts`, `app/saved-searches/page.tsx`, `app/saved-searches/delete-search-button.tsx`, `app/saved-searches/loading.tsx`.
+- `app/_components/header-nav.tsx`, `app/robots.ts`, `components/ui/dialog.tsx`.
+
+**Notes:** Run migration 009 in Supabase SQL Editor. "Save this search" appears only when there are active filters and user is logged in. Run search links to `/jobs` with query string; delete uses server action + refresh.
+
+---
+
 ## Quick reference
 
 | Need to…                                    | Look at…                                                                                                                                                    |
@@ -447,6 +492,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Job detail                                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts`                                                                                                                   |
 | Employer dashboard / CRUD                   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts`                                    |
 | Favorites / saved jobs                      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                               |
+| My applications                             | `app/my-applications/page.tsx`, `lib/jobs.ts` (getApplicationsByApplicant), `lib/types.ts` (ApplicationWithJob)                                               |
+| Saved searches                              | `app/saved-searches/*`, `app/jobs/save-search-button.tsx`, `app/jobs/jobs-filter.tsx`, `lib/saved-searches.ts`, `lib/job-filters.ts`, migration 009           |
 | SEO (sitemap, robots, meta)                 | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata                                                                                    |
 | Loading / polish                            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states                                                                              |
 | Apply URL/email, close listing              | `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/employer/actions.ts`, `app/employer/close-reopen-button.tsx`, migrations 002–003                           |
@@ -458,8 +505,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Add UI components                           | `npx shadcn@latest add <component>`, `components/ui/`                                                                                                       |
 | Supabase client in component                | Client: `lib/supabase/client.ts`. Server: `lib/supabase/server.ts` (await).                                                                                 |
 | Dual registration, profiles, storage, apply | Migrations 006–007, `lib/types.ts`, `lib/storage.ts`, `lib/email.ts`, `app/register/*`, `app/profile/*`, `app/jobs/[slug]/apply/*`.                         |
-| User CVs (up to 3), apply with file/saved   | Migration 008, `user_cvs` table, `app/profile/*`, `app/jobs/[slug]/apply/*`, `lib/types.ts`.                                                                  |
-| Header (Jobs, Blog, account, heart)         | `app/_components/header.tsx`, `app/_components/header-nav.tsx`, `components/ui/dropdown-menu.tsx`.                                                            |
-| Fonts, heading color                         | `app/layout.tsx` (Open_Sans, Work_Sans), `app/globals.css`, `tailwind.config.ts`.                                                                             |
+| User CVs (up to 3), apply with file/saved   | Migration 008, `user_cvs` table, `app/profile/*`, `app/jobs/[slug]/apply/*`, `lib/types.ts`.                                                                |
+| Header (Jobs, Blog, account, heart)         | `app/_components/header.tsx`, `app/_components/header-nav.tsx`, `components/ui/dropdown-menu.tsx`.                                                          |
+| Fonts, heading color                        | `app/layout.tsx` (Open_Sans, Work_Sans), `app/globals.css`, `tailwind.config.ts`.                                                                           |
 | Hydration (extension-injected attributes)   | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`.   |
 | Next.js Image + Supabase storage            | `next.config.ts` (images.remotePatterns for \*.supabase.co).                                                                                                |

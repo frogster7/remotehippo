@@ -44,9 +44,13 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
     { href: "/jobs", label: "Jobs" },
     { href: "/blog", label: "Blog" },
     ...(user
-      ? [
+          ? [
           { href: "/saved-jobs", label: "Saved Jobs" },
-          ...(isEmployer ? [{ href: "/employer/dashboard", label: "Dashboard" }] : []),
+          { href: "/my-applications", label: "My applications" },
+          { href: "/saved-searches", label: "Saved searches" },
+          ...(isEmployer
+            ? [{ href: "/employer/dashboard", label: "Dashboard" }]
+            : []),
           { href: "/profile", label: "Edit" },
           { type: "signout" as const, label: "Sign out" },
         ]
@@ -97,6 +101,12 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
                 <DropdownMenuItem asChild>
                   <Link href="/saved-jobs">Saved Jobs</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/my-applications">My applications</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/saved-searches">Saved searches</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   Sign out
                 </DropdownMenuItem>
@@ -143,7 +153,10 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={linkClass + (pathname === item.href ? " text-foreground" : "")}
+                  className={
+                    linkClass +
+                    (pathname === item.href ? " text-foreground" : "")
+                  }
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -157,7 +170,7 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
                 >
                   {item.label}
                 </button>
-              ) : null
+              ) : null,
             )}
           </nav>
         </SheetContent>

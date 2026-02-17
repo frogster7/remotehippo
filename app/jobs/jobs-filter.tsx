@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { WORK_TYPES, JOB_TYPES } from "@/lib/types";
 import type { JobFilters, WorkType } from "@/lib/types";
+import { SaveSearchButton } from "./save-search-button";
 
 function getFiltersFromSearchParams(sp: URLSearchParams): Partial<JobFilters> {
   const salaryMin = sp.get("salary_min");
@@ -92,9 +93,11 @@ function getActiveFilterLabels(
 export function JobsFilter({
   roles,
   techOptions,
+  isLoggedIn = false,
 }: {
   roles: string[];
   techOptions: string[];
+  isLoggedIn?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -182,6 +185,11 @@ export function JobsFilter({
               </span>
             ))}
           </div>
+          {isLoggedIn && (
+            <div className="mt-4 pt-3 border-t">
+              <SaveSearchButton filters={filters as JobFilters} />
+            </div>
+          )}
         </div>
       )}
 

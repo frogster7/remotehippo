@@ -1,56 +1,14 @@
 import { Suspense } from "react";
 import { Briefcase } from "lucide-react";
 import { getJobs, getFilterOptions, getFavoritedJobIds } from "@/lib/jobs";
+import { parseFilters, buildJobsQueryString } from "@/lib/job-filters";
 import { JobsFilter } from "./jobs-filter";
 import { JobCard } from "./job-card";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site";
 import { formatRelativeTime } from "@/lib/format";
-import type { JobFilters, WorkType, JobType } from "@/lib/types";
+import type { JobFilters } from "@/lib/types";
 import type { Metadata } from "next";
-
-function getParamArray(
-  searchParams: Record<string, string | string[] | undefined>,
-  k: string
-): string[] {
-  const v = searchParams[k];
-  if (v == null) return [];
-  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string" && x.trim() !== "");
-  return v.trim() ? [v] : [];
-}
-
-function parseFilters(searchParams: Record<string, string | string[] | undefined>): JobFilters {
-  const get = (k: string) => {
-    const v = searchParams[k];
-    return Array.isArray(v) ? v[0] : v;
-  };
-  const salaryMin = get("salary_min");
-  const salaryMax = get("salary_max");
-  return {
-    q: get("q") ?? undefined,
-    location: get("location") ?? undefined,
-    roles: getParamArray(searchParams, "role"),
-    work_types: getParamArray(searchParams, "work_type") as WorkType[],
-    job_type: (get("job_type") as JobType) ?? undefined,
-    tech: getParamArray(searchParams, "tech"),
-    salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
-    salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
-  };
-}
-
-function buildJobsQueryString(filters: JobFilters): string {
-  const p = new URLSearchParams();
-  if (filters.q?.trim()) p.set("q", filters.q.trim());
-  if (filters.location?.trim()) p.set("location", filters.location.trim());
-  filters.roles?.forEach((r) => p.append("role", r));
-  filters.work_types?.forEach((w) => p.append("work_type", w));
-  if (filters.job_type) p.set("job_type", filters.job_type);
-  filters.tech?.forEach((t) => p.append("tech", t));
-  if (filters.salary_min != null && filters.salary_min > 0) p.set("salary_min", String(filters.salary_min));
-  if (filters.salary_max != null && filters.salary_max > 0) p.set("salary_max", String(filters.salary_max));
-  const qs = p.toString();
-  return qs ? `?${qs}` : "";
-}
 
 export async function generateMetadata({
   searchParams,
@@ -132,7 +90,11 @@ export default async function JobsPage({
           {/* Left sidebar – filters */}
           <aside className="w-full shrink-0 lg:w-80">
             <Suspense fallback={<div className="h-64 animate-pulse rounded-lg border bg-card" />}>
-              <JobsFilter roles={filterOptions.roles} techOptions={filterOptions.tech} />
+              <JobsFilter
+                roles={filterOptions.roles}
+                techOptions={filterOptions.tech}
+                isLoggedIn={!!user}
+              />
             </Suspense>
           </aside>
 

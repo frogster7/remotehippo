@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import { Open_Sans, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Header } from "./_components/header";
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const workSans = Work_Sans({
+  variable: "--font-work-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const title = "Niche Tech Job Board";
 const description =
@@ -9,7 +22,9 @@ const description =
 export const metadata: Metadata = {
   title: { default: title, template: "%s | Niche Tech Job Board" },
   description,
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  ),
   openGraph: {
     title,
     description,
@@ -33,8 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${openSans.variable} ${workSans.variable}`}>
+      <body
+        className={`${openSans.className} antialiased`}
+        suppressHydrationWarning
+      >
         <div suppressHydrationWarning>
           <Header />
           {children}

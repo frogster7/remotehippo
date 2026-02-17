@@ -106,6 +106,14 @@ export interface Application {
   applied_at: string;
 }
 
+/** Application with nested job (and employer) for list views (e.g. My Applications). */
+export interface ApplicationWithJob {
+  id: string;
+  status: string;
+  applied_at: string;
+  job: Job;
+}
+
 /** Payload for submitting a job application (apply form). */
 export interface ApplicationFormData {
   applicant_name: string;
@@ -151,6 +159,15 @@ export interface JobFilters {
   salary_max?: number;
   q?: string;
   location?: string;
+}
+
+/** Saved search preset (filters + user-defined name). */
+export interface SavedSearch {
+  id: string;
+  user_id: string;
+  name: string;
+  filters: JobFilters;
+  created_at: string;
 }
 
 export const WORK_TYPES: { value: WorkType; label: string }[] = [
