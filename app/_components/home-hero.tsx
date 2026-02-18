@@ -173,11 +173,11 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
   const visibleTech = techExpanded ? allTech : allTech.slice(0, TECH_COLLAPSED);
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden bg-gradient-to-b from-muted via-muted/70 to-background">
       <div className="absolute inset-0 -z-10" aria-hidden>
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.08] via-primary/[0.02] to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.03] from-0% via-transparent via-50% to-primary/[0.04] to-100%" />
-        <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-muted/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.14] via-primary/[0.04] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.06] from-0% via-transparent via-50% to-primary/[0.08] to-100%" />
+        <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-muted/90 to-transparent" />
       </div>
 
       <HydrationSafeDiv className="container mx-auto px-4 pt-12 pb-16 md:pt-16 md:pb-20 lg:pt-20 lg:pb-24">

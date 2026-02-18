@@ -4,62 +4,62 @@
 
 @layer base {
   :root {
-    /* Warm paper background, teal primary, dark slate text */
-    --background: 45 22% 97%;
-    --foreground: 210 18% 22%;
-    --card: 0 0% 100%;
-    --card-foreground: 210 18% 22%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 18% 22%;
-    --primary: 173 58% 36%;
+    /* Rustic: terracotta, sage, cream, warm browns */
+    --background: 40 33% 97%;
+    --foreground: 25 25% 18%;
+    --card: 35 30% 99%;
+    --card-foreground: 25 25% 18%;
+    --popover: 35 30% 99%;
+    --popover-foreground: 25 25% 18%;
+    --primary: 18 65% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 173 30% 93%;
-    --secondary-foreground: 173 58% 28%;
-    --muted: 45 15% 94%;
-    --muted-foreground: 210 12% 48%;
-    --accent: 173 40% 90%;
-    --accent-foreground: 173 58% 28%;
-    --destructive: 0 72% 51%;
+    --secondary: 85 22% 88%;
+    --secondary-foreground: 85 25% 22%;
+    --muted: 35 28% 93%;
+    --muted-foreground: 25 15% 42%;
+    --accent: 28 55% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 55% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 45 12% 90%;
-    --input: 45 12% 90%;
-    --ring: 173 58% 36%;
-    --heading: 210 24% 14%;
-    --chart-1: 173 58% 36%;
-    --chart-2: 43 74% 56%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 27 87% 57%;
-    --chart-5: 280 55% 55%;
-    --salary: 142 56% 32%;
+    --border: 35 22% 88%;
+    --input: 35 22% 88%;
+    --ring: 18 65% 42%;
+    --heading: 25 28% 12%;
+    --chart-1: 18 65% 42%;
+    --chart-2: 85 25% 38%;
+    --chart-3: 28 55% 55%;
+    --chart-4: 45 40% 45%;
+    --chart-5: 15 50% 40%;
+    --salary: 85 30% 32%;
     --radius: 0.625rem;
   }
   .dark {
-    --background: 210 22% 9%;
-    --foreground: 45 15% 95%;
-    --card: 210 20% 12%;
-    --card-foreground: 45 15% 95%;
-    --popover: 210 20% 12%;
-    --popover-foreground: 45 15% 95%;
-    --primary: 173 55% 45%;
-    --primary-foreground: 210 24% 10%;
-    --secondary: 210 18% 18%;
-    --secondary-foreground: 173 50% 85%;
-    --muted: 210 18% 18%;
-    --muted-foreground: 210 12% 58%;
-    --accent: 173 35% 22%;
-    --accent-foreground: 173 55% 75%;
-    --destructive: 0 55% 45%;
+    --background: 25 22% 9%;
+    --foreground: 40 20% 92%;
+    --card: 25 20% 12%;
+    --card-foreground: 40 20% 92%;
+    --popover: 25 20% 12%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 18 60% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 85 18% 22%;
+    --secondary-foreground: 85 30% 82%;
+    --muted: 25 18% 18%;
+    --muted-foreground: 40 12% 58%;
+    --accent: 28 50% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 50% 42%;
     --destructive-foreground: 0 0% 98%;
-    --border: 210 18% 22%;
-    --input: 210 18% 22%;
-    --ring: 173 55% 45%;
-    --heading: 45 20% 96%;
-    --chart-1: 173 55% 50%;
-    --chart-2: 43 65% 50%;
-    --chart-3: 197 40% 35%;
-    --chart-4: 27 75% 50%;
-    --chart-5: 280 50% 55%;
-    --salary: 142 56% 45%;
+    --border: 25 18% 22%;
+    --input: 25 18% 22%;
+    --ring: 18 60% 48%;
+    --heading: 40 18% 95%;
+    --chart-1: 18 60% 48%;
+    --chart-2: 85 28% 45%;
+    --chart-3: 28 50% 50%;
+    --chart-4: 45 35% 50%;
+    --chart-5: 15 45% 45%;
+    --salary: 85 35% 48%;
   }
 }
 
@@ -70,7 +70,12 @@
   body {
     @apply bg-background text-foreground;
   }
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading text-heading;
   }
 }
@@ -82,5 +87,57 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Light gradient + dot pattern for employer form page */
+  .bg-form-page {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(
+        circle at 50% 50%,
+        hsl(var(--muted) / 0.5) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        circle at 20% 80%,
+        hsl(var(--accent) / 0.05) 0%,
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 80% 20%,
+        hsl(var(--primary) / 0.04) 0%,
+        transparent 40%
+      ),
+      radial-gradient(hsl(var(--border) / 0.25) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      32px 32px;
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+
+  /* Subtle gradient + light diagonal pattern for form card */
+  .bg-form-card {
+    background-color: hsl(var(--card));
+    background-image:
+      linear-gradient(
+        160deg,
+        hsl(var(--card)) 0%,
+        hsl(var(--muted) / 0.4) 70%,
+        hsl(var(--secondary) / 0.12) 100%
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 14px,
+        hsl(var(--border) / 0.08) 14px,
+        hsl(var(--border) / 0.08) 15px
+      );
+    background-blend-mode: normal, overlay;
   }
 }

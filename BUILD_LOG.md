@@ -550,3 +550,30 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `next.config.ts` – `cdn.jsdelivr.net` in `images.remotePatterns`.
 - `package.json` – `react-icons` added.
 
+---
+
+## Job form UX: list items, layout, styling, and pages
+
+**What was done:**
+
+- **List items one-by-one:** Responsibilities, Requirements, What we offer, Good to have, and Benefits no longer use textareas. Each uses a reusable `ListItemField`: single input + "Add" button (Enter to add), removable list rows, no duplicate items. Data still stored as newline-separated strings; form state is `string[]`, joined with `\n` in `buildForm()`. `parseLines()` helper splits saved values for edit mode.
+- **Form layout:** Description, Work time, and Work mode moved below Benefits. Work time and Work mode use switch-style button groups (two options each) instead of dropdowns. Card header ("New job listing" / "Edit job") and its description removed from the form card.
+- **Required fields:** Job title *, Specialization *, Summary *; Responsibilities *, Requirements *, and What we offer * are required (validation in `handleSubmit`). All form labels use 18px. Helper text under Specialization, Tech stack, Application email/URL, and under section titles removed.
+- **Section dividers:** Thin gradient lines (`from-transparent via-border to-transparent`) between form sections with vertical spacing. Form uses `space-y-0` with separator divs.
+- **Field and button styling:** Inputs use shared `fieldInputClass` (h-11, rounded-lg, border-border/80, shadow-sm, focus ring). Textareas auto-resize (`AutoResizeTextarea`), rounded-lg. List item rows: rounded-lg, bg-muted/30, hover. Specialization and Tech stack option chips: rounded-full, border-2 border-secondary, bg-secondary/50, hover scale. Work time/mode toggles: rounded-lg group, selected = primary, unselected = card with hover. Primary submit button size lg, rounded-lg, shadow; Cancel/Delete same sizing.
+- **Form card:** Uses utility `bg-form-card` (subtle diagonal gradient + light diagonal stripe pattern). Form wrapped in `Card` with `rounded-xl border-border/80 shadow-lg`.
+- **New job page:** `app/employer/jobs/new/page.tsx` – main has `bg-form-page`, container `max-w-4xl`, padding `py-10` / `sm:px-6`. Back link with `ArrowLeft` icon and "Back to dashboard". Header block with title and subtitle. Same layout and styling applied to **edit job page** (`app/employer/jobs/[id]/edit/page.tsx`): `bg-form-page`, `max-w-4xl`, same back link and header pattern.
+- **Color palette:** `app/globals.css` – rustic theme: terracotta primary (18 65% 42%), sage secondary (85 22% 88%), cream background (40 33% 97%), warm brown foreground, clay accent. Dark mode: deep warm brown backgrounds, same hue family.
+- **Background utilities:** `.bg-form-page` – light gradient + dot pattern for employer form pages (radial gradients and repeating dot grid). `.bg-form-card` – subtle gradient + diagonal stripe pattern for the job form card. Both reduced in intensity (lighter opacities) for a softer look.
+- **Home hero gradient:** Hero section has a stronger background gradient: `from-muted via-muted/70 to-background`. Overlay gradients increased (primary tint and bottom muted) for more depth.
+
+**Key files:**
+
+- `app/employer/job-form.tsx` – `ListItemField`, `AutoResizeTextarea`, `parseLines`, array state for the five list fields, section dividers, field/button/chip styles, Work time/mode switches, required validation.
+- `app/employer/jobs/new/page.tsx` – `bg-form-page`, max-w-4xl, back link, header.
+- `app/employer/jobs/[id]/edit/page.tsx` – same layout and styling as new job page.
+- `app/globals.css` – `:root` / `.dark` rustic palette; `.bg-form-page`, `.bg-form-card` utilities.
+- `app/_components/home-hero.tsx` – hero `bg-gradient-to-b from-muted via-muted/70 to-background`, stronger overlay gradients.
+
+**Notes:** Job form remains a single shared component for create and edit; only the page wrappers differ. Storage and API for list fields unchanged (newline-separated strings).
+

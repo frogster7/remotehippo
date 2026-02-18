@@ -1,25 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   WORK_TYPES,
   JOB_TYPES,
@@ -36,6 +23,157 @@ function parseList(s: string): string[] {
     .split(/[,;]/)
     .map((t) => t.trim())
     .filter(Boolean);
+}
+
+/** Split newline-separated string into trimmed non-empty lines (matches job page SectionContent). */
+function parseLines(s: string | null | undefined): string[] {
+  if (!s) return [];
+  return s
+    .split(/\n/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+const fieldInputClass =
+  "h-11 rounded-lg border-border/80 bg-background px-3.5 text-base shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+const textareaBaseClass =
+  "flex w-full rounded-lg border border-border/80 bg-background px-3.5 py-3 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden transition-shadow";
+
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  required,
+  id,
+  minRows = 2,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  id?: string;
+  minRows?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const lineHeight = 20;
+    const minHeight = minRows * lineHeight;
+    el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
+  }, [value, minRows]);
+
+  return (
+    <textarea
+      ref={ref}
+      id={id}
+      className={textareaBaseClass}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      required={required}
+      rows={minRows}
+    />
+  );
+}
+
+type ListItemFieldProps = {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string[];
+  onChange: (items: string[]) => void;
+  disabled?: boolean;
+  optional?: boolean;
+};
+
+function ListItemField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+  optional,
+}: ListItemFieldProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  function addItem() {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    if (value.includes(trimmed)) return;
+    onChange([...value, trimmed]);
+    setInputValue("");
+  }
+
+  function removeItem(item: string) {
+    onChange(value.filter((x) => x !== item));
+  }
+
+  return (
+    <div className="space-y-2">
+      {label ? (
+        <Label htmlFor={id}>
+          {label}
+          {optional && (
+            <span className="text-muted-foreground font-normal"> (optional)</span>
+          )}
+        </Label>
+      ) : null}
+      <div className="flex gap-2">
+        <Input
+          id={id}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addItem();
+            }
+          }}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={fieldInputClass}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="default"
+          className="h-11 rounded-lg px-5 shadow-sm border border-border/80 hover:bg-secondary/80"
+          onClick={addItem}
+          disabled={disabled || !inputValue.trim()}
+        >
+          Add
+        </Button>
+      </div>
+      {value.length > 0 ? (
+        <ul className="space-y-2">
+          {value.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-2 rounded-lg border border-border/80 bg-muted/30 px-3.5 py-2.5 text-sm shadow-sm hover:bg-muted/50 transition-colors"
+            >
+              <span className="flex-1 text-muted-foreground">{item}</span>
+              <button
+                type="button"
+                onClick={() => removeItem(item)}
+                className="shrink-0 rounded-full p-0.5 hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+                aria-label={`Remove ${item}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 type Props = {
@@ -92,13 +230,21 @@ export function JobForm({
   );
   const [isActive, setIsActive] = useState(job?.is_active ?? true);
   const [summary, setSummary] = useState(job?.summary ?? "");
-  const [responsibilities, setResponsibilities] = useState(
-    job?.responsibilities ?? "",
+  const [responsibilitiesArr, setResponsibilitiesArr] = useState<string[]>(
+    () => parseLines(job?.responsibilities),
   );
-  const [requirements, setRequirements] = useState(job?.requirements ?? "");
-  const [whatWeOffer, setWhatWeOffer] = useState(job?.what_we_offer ?? "");
-  const [goodToHave, setGoodToHave] = useState(job?.good_to_have ?? "");
-  const [benefits, setBenefits] = useState(job?.benefits ?? "");
+  const [requirementsArr, setRequirementsArr] = useState<string[]>(() =>
+    parseLines(job?.requirements),
+  );
+  const [whatWeOfferArr, setWhatWeOfferArr] = useState<string[]>(() =>
+    parseLines(job?.what_we_offer),
+  );
+  const [goodToHaveArr, setGoodToHaveArr] = useState<string[]>(() =>
+    parseLines(job?.good_to_have),
+  );
+  const [benefitsArr, setBenefitsArr] = useState<string[]>(() =>
+    parseLines(job?.benefits),
+  );
 
   function buildForm(): JobFormData {
     return {
@@ -117,11 +263,17 @@ export function JobForm({
       application_email: applicationEmail.trim() || null,
       application_url: applicationUrl.trim() || null,
       summary: summary.trim() || null,
-      responsibilities: responsibilities.trim() || null,
-      requirements: requirements.trim() || null,
-      what_we_offer: whatWeOffer.trim() || null,
-      good_to_have: goodToHave.trim() || null,
-      benefits: benefits.trim() || null,
+      responsibilities:
+        responsibilitiesArr.length > 0
+          ? responsibilitiesArr.join("\n")
+          : null,
+      requirements:
+        requirementsArr.length > 0 ? requirementsArr.join("\n") : null,
+      what_we_offer:
+        whatWeOfferArr.length > 0 ? whatWeOfferArr.join("\n") : null,
+      good_to_have:
+        goodToHaveArr.length > 0 ? goodToHaveArr.join("\n") : null,
+      benefits: benefitsArr.length > 0 ? benefitsArr.join("\n") : null,
     };
   }
 
@@ -130,6 +282,18 @@ export function JobForm({
     setError(null);
     if (specializationsArr.length === 0) {
       setError("Please select or add at least one specialization.");
+      return;
+    }
+    if (responsibilitiesArr.length === 0) {
+      setError("Please add at least one responsibility.");
+      return;
+    }
+    if (requirementsArr.length === 0) {
+      setError("Please add at least one requirement.");
+      return;
+    }
+    if (whatWeOfferArr.length === 0) {
+      setError("Please add at least one item in What we offer.");
       return;
     }
     setLoading(true);
@@ -157,25 +321,24 @@ export function JobForm({
     setDeleteLoading(false);
   }
 
+  const sectionDivider = (
+    <div
+      className="h-px w-full shrink-0 bg-gradient-to-r from-transparent via-border to-transparent opacity-80"
+      aria-hidden
+    />
+  );
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit job" : "New job listing"}</CardTitle>
-        <CardDescription>
-          {isEdit
-            ? "Update the job details. Only active jobs appear on the public board."
-            : "Add a new job. It will appear on the board once saved as active."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <Card className="rounded-xl border-border/80 shadow-lg bg-form-card">
+      <CardContent className="p-6 sm:p-8 pt-6">
+        <form onSubmit={handleSubmit} className="space-y-0">
           {error && (
-            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
-            </p>
+            </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="title">Job title *</Label>
+            <Label htmlFor="title" className="text-[18px]">Job title *</Label>
             <Input
               id="title"
               value={title}
@@ -183,10 +346,14 @@ export function JobForm({
               placeholder="e.g. Senior Frontend Developer"
               required
               disabled={loading}
+              className={fieldInputClass}
             />
           </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
           <div className="space-y-2">
-            <Label>Specialization *</Label>
+            <Label className="text-[18px]">Specialization *</Label>
             <div className="flex flex-wrap gap-2">
               {specializationsArr.map((s) => (
                 <Badge
@@ -211,7 +378,7 @@ export function JobForm({
                 </Badge>
               ))}
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {SPECIALIZATIONS.filter(
                 (s) => !specializationsArr.includes(s),
               ).map((s) => (
@@ -224,7 +391,7 @@ export function JobForm({
                     )
                   }
                   disabled={loading}
-                  className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                  className="rounded-full border-2 border-secondary bg-secondary/50 px-4 py-2 text-sm font-medium text-secondary-foreground shadow-sm hover:bg-secondary hover:border-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {s}
                 </button>
@@ -256,13 +423,14 @@ export function JobForm({
               }}
               placeholder="Or type custom values (comma-separated)"
               disabled={loading}
+              className={fieldInputClass}
             />
-            <p className="text-xs text-muted-foreground">
-              Click to add, or type custom values (comma-separated)
-            </p>
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="space-y-2">
-            <Label>Tech stack</Label>
+            <Label className="text-[18px]">Tech stack</Label>
             <div className="flex flex-wrap gap-2">
               {techStackArr.map((t) => (
                 <Badge
@@ -285,7 +453,7 @@ export function JobForm({
                 </Badge>
               ))}
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {TECH_STACK_OPTIONS.filter((t) => !techStackArr.includes(t)).map(
                 (t) => (
                   <button
@@ -297,7 +465,7 @@ export function JobForm({
                       )
                     }
                     disabled={loading}
-                    className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                    className="rounded-full border-2 border-secondary bg-secondary/50 px-4 py-2 text-sm font-medium text-secondary-foreground shadow-sm hover:bg-secondary hover:border-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t}
                   </button>
@@ -330,140 +498,161 @@ export function JobForm({
               }}
               placeholder="Or type custom values (comma-separated)"
               disabled={loading}
+              className={fieldInputClass}
             />
-            <p className="text-xs text-muted-foreground">
-              Click to add, or type custom values (comma-separated)
-            </p>
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description (optional)</Label>
-            <textarea
+            <h3 className="text-[18px] font-medium">Summary *</h3>
+            <AutoResizeTextarea
+              id="summary"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="Short offer summary (e.g. one paragraph or bullet points)"
+              required
+              disabled={loading}
+              minRows={3}
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">Responsibilities *</h3>
+            <ListItemField
+              id="responsibilities"
+              label=""
+              placeholder="Type a responsibility and click Add or press Enter"
+              value={responsibilitiesArr}
+              onChange={setResponsibilitiesArr}
+              disabled={loading}
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">Requirements *</h3>
+            <ListItemField
+              id="requirements"
+              label=""
+              placeholder="Type a requirement and click Add or press Enter"
+              value={requirementsArr}
+              onChange={setRequirementsArr}
+              disabled={loading}
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">What we offer *</h3>
+            <ListItemField
+              id="what_we_offer"
+              label=""
+              placeholder="Type an item and click Add or press Enter"
+              value={whatWeOfferArr}
+              onChange={setWhatWeOfferArr}
+              disabled={loading}
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">Good to have</h3>
+            <ListItemField
+              id="good_to_have"
+              label=""
+              placeholder="Nice-to-have skills or experience"
+              value={goodToHaveArr}
+              onChange={setGoodToHaveArr}
+              disabled={loading}
+              optional
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">Benefits</h3>
+            <ListItemField
+              id="benefits"
+              label=""
+              placeholder="e.g. Health insurance, remote work"
+              value={benefitsArr}
+              onChange={setBenefitsArr}
+              disabled={loading}
+              optional
+            />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[18px] font-medium">Description</h3>
+            <AutoResizeTextarea
               id="description"
-              className="flex min-h-[160px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Additional details, how to apply, etc."
               disabled={loading}
+              minRows={4}
             />
           </div>
-          <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
-            <p className="text-sm font-medium text-muted-foreground">
-              Structured sections (shown as cards on the job page). One point
-              per line for lists.
-            </p>
-            <div className="space-y-2">
-              <Label htmlFor="summary">Summary *</Label>
-              <textarea
-                id="summary"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="Short offer summary (e.g. one paragraph or bullet points)"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsibilities">Responsibilities</Label>
-              <textarea
-                id="responsibilities"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={responsibilities}
-                onChange={(e) => setResponsibilities(e.target.value)}
-                placeholder="One responsibility per line"
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="requirements">Requirements</Label>
-              <textarea
-                id="requirements"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-                placeholder="One requirement per line"
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="what_we_offer">What we offer</Label>
-              <textarea
-                id="what_we_offer"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={whatWeOffer}
-                onChange={(e) => setWhatWeOffer(e.target.value)}
-                placeholder="One item per line"
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="good_to_have">Good to have (optional)</Label>
-              <textarea
-                id="good_to_have"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={goodToHave}
-                onChange={(e) => setGoodToHave(e.target.value)}
-                placeholder="Nice-to-have skills or experience, one per line"
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="benefits">Benefits (optional)</Label>
-              <textarea
-                id="benefits"
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                value={benefits}
-                onChange={(e) => setBenefits(e.target.value)}
-                placeholder="e.g. Health insurance, remote work, one per line"
-                disabled={loading}
-              />
-            </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Work mode</Label>
-              <Select
-                value={workType}
-                onValueChange={(v) =>
-                  setWorkType(v as JobFormData["work_type"])
-                }
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {WORK_TYPES.map((w) => (
-                    <SelectItem key={w.value} value={w.value}>
-                      {w.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-[18px]">Work time</Label>
+              <div className="flex rounded-lg border border-border/80 overflow-hidden shadow-sm">
+                {JOB_TYPES.map((j) => (
+                  <button
+                    key={j.value}
+                    type="button"
+                    onClick={() => setJobType(j.value as JobFormData["job_type"])}
+                    disabled={loading}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium transition-all ${
+                      jobType === j.value
+                        ? "bg-primary text-primary-foreground shadow-inner"
+                        : "bg-card hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {j.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Work time</Label>
-              <Select
-                value={jobType}
-                onValueChange={(v) => setJobType(v as JobFormData["job_type"])}
-                disabled={loading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {JOB_TYPES.map((j) => (
-                    <SelectItem key={j.value} value={j.value}>
-                      {j.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-[18px]">Work mode</Label>
+              <div className="flex rounded-lg border border-border/80 overflow-hidden shadow-sm">
+                {WORK_TYPES.map((w) => (
+                  <button
+                    key={w.value}
+                    type="button"
+                    onClick={() => setWorkType(w.value as JobFormData["work_type"])}
+                    disabled={loading}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium transition-all ${
+                      workType === w.value
+                        ? "bg-primary text-primary-foreground shadow-inner"
+                        : "bg-card hover:bg-muted/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
             </div>
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="salary_min">Salary min (e.g. 60000)</Label>
+              <Label htmlFor="salary_min" className="text-[18px]">Salary min (e.g. 60000)</Label>
               <Input
                 id="salary_min"
                 type="number"
@@ -472,10 +661,11 @@ export function JobForm({
                 onChange={(e) => setSalaryMin(e.target.value)}
                 placeholder="Optional"
                 disabled={loading}
+                className={fieldInputClass}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="salary_max">Salary max (e.g. 90000)</Label>
+              <Label htmlFor="salary_max" className="text-[18px]">Salary max (e.g. 90000)</Label>
               <Input
                 id="salary_max"
                 type="number"
@@ -484,22 +674,30 @@ export function JobForm({
                 onChange={(e) => setSalaryMax(e.target.value)}
                 placeholder="Optional"
                 disabled={loading}
+                className={fieldInputClass}
               />
             </div>
           </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location" className="text-[18px]">Location</Label>
             <Input
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Europe, or City (for hybrid)"
               disabled={loading}
+              className={fieldInputClass}
             />
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="application_email">Application email</Label>
+              <Label htmlFor="application_email" className="text-[18px]">Application email</Label>
               <Input
                 id="application_email"
                 type="email"
@@ -507,13 +705,11 @@ export function JobForm({
                 onChange={(e) => setApplicationEmail(e.target.value)}
                 placeholder="e.g. jobs@company.com"
                 disabled={loading}
+                className={fieldInputClass}
               />
-              <p className="text-xs text-muted-foreground">
-                Optional. Applicants will get a mailto link.
-              </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="application_url">Application URL</Label>
+              <Label htmlFor="application_url" className="text-[18px]">Application URL</Label>
               <Input
                 id="application_url"
                 type="url"
@@ -521,11 +717,12 @@ export function JobForm({
                 onChange={(e) => setApplicationUrl(e.target.value)}
                 placeholder="e.g. https://company.com/careers/apply"
                 disabled={loading}
+                className={fieldInputClass}
               />
-              <p className="text-xs text-muted-foreground">
-                Optional. Link to your careers page or ATS.
-              </p>
             </div>
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
           </div>
           <div className="flex flex-wrap gap-6">
             <div className="flex items-center space-x-2">
@@ -535,22 +732,35 @@ export function JobForm({
                 onCheckedChange={(c) => setIsActive(!!c)}
                 disabled={loading}
               />
-              <Label htmlFor="is_active" className="font-normal cursor-pointer">
+              <Label htmlFor="is_active" className="text-[18px] font-normal cursor-pointer">
                 Active (visible on job board)
               </Label>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button type="submit" disabled={loading}>
+          <div className="flex flex-wrap items-center gap-4 pt-4">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={loading}
+              className="h-11 rounded-lg px-6 shadow-md hover:shadow-lg transition-shadow"
+            >
               {loading ? "Saving…" : isEdit ? "Save changes" : "Create job"}
             </Button>
-            <Button type="button" variant="outline" asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-11 rounded-lg px-5 border-border/80 shadow-sm"
+              asChild
+            >
               <Link href="/employer/dashboard">Cancel</Link>
             </Button>
             {isEdit && deleteAction && (
               <Button
                 type="button"
                 variant="destructive"
+                size="lg"
+                className="h-11 rounded-lg px-5 shadow-sm"
                 onClick={handleDelete}
                 disabled={deleteLoading}
               >
