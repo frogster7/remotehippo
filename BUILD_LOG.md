@@ -492,8 +492,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Job detail                                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts`                                                                                                                   |
 | Employer dashboard / CRUD                   | `app/employer/dashboard/*`, `app/employer/jobs/*`, `app/employer/actions.ts`, `app/employer/job-form.tsx`, `lib/jobs.ts`                                    |
 | Favorites / saved jobs                      | `app/favorites/*`, `app/saved-jobs/*`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                               |
-| My applications                             | `app/my-applications/page.tsx`, `lib/jobs.ts` (getApplicationsByApplicant), `lib/types.ts` (ApplicationWithJob)                                               |
-| Saved searches                              | `app/saved-searches/*`, `app/jobs/save-search-button.tsx`, `app/jobs/jobs-filter.tsx`, `lib/saved-searches.ts`, `lib/job-filters.ts`, migration 009           |
+| My applications                             | `app/my-applications/page.tsx`, `lib/jobs.ts` (getApplicationsByApplicant), `lib/types.ts` (ApplicationWithJob)                                             |
+| Saved searches                              | `app/saved-searches/*`, `app/jobs/save-search-button.tsx`, `app/jobs/jobs-filter.tsx`, `lib/saved-searches.ts`, `lib/job-filters.ts`, migration 009         |
 | SEO (sitemap, robots, meta)                 | `app/sitemap.ts`, `app/robots.ts`, `lib/site.ts`, layout + jobs metadata                                                                                    |
 | Loading / polish                            | `app/*/loading.tsx`, `app/_components/header-nav.tsx`, skeleton + empty states                                                                              |
 | Apply URL/email, close listing              | `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/employer/actions.ts`, `app/employer/close-reopen-button.tsx`, migrations 002–003                           |
@@ -510,3 +510,43 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Fonts, heading color                        | `app/layout.tsx` (Open_Sans, Work_Sans), `app/globals.css`, `tailwind.config.ts`.                                                                           |
 | Hydration (extension-injected attributes)   | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`.   |
 | Next.js Image + Supabase storage            | `next.config.ts` (images.remotePatterns for \*.supabase.co).                                                                                                |
+| Specialization / tech stack / work mode     | `lib/types.ts`, `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/page.tsx`.                                                 |
+| Homepage hero collapse, tech icons          | `app/_components/home-hero.tsx`, `next.config.ts`.                                                                                                          |
+
+---
+
+## Job form & filter improvements
+
+**What was done:**
+
+- **Specialization field:** Replaced the "Role / position" plain input in the employer job form with a multi-select tag picker. `SPECIALIZATIONS` constant added to `lib/types.ts` (22 options: Backend, Frontend, Full-stack, Mobile, Architecture, DevOps, Game dev, Data analyst & BI, Big Data / Data Science, Embedded, QA/Testing, Security, Helpdesk, Product Management, Project Management, Agile, UI/UX, Business analyst, System analyst, SAP&ERP, IT admin, AI/ML). Selected specializations shown as removable badges; presets shown as clickable tags; custom values via comma-separated input. Multiple specializations stored as comma-separated string in `jobs.role` column (no DB migration). `"UX/UI"` renamed to `"UI/UX"`.
+- **Tech stack field:** Moved immediately below Specialization (above Description) in the form. Changed from free-text input to tag picker: `TECH_STACK_OPTIONS` constant (20 options) as clickable presets, removable badges for selected items, custom input (comma-separated). `TECH_STACK_OPTIONS` added to `lib/types.ts`.
+- **Work type → Work mode:** Renamed label in the job form, jobs filter sidebar and horizontal layout, active filter tags ("Work:" → "Work mode:"), and jobs page metadata description strings.
+- **Specialization in filters:** "Role" → "Specialization" in sidebar label, horizontal placeholder, and "Add role" → "Add specialization". Active filter tag updated to "Specialization:". `getFilterOptions` in `lib/jobs.ts` now returns `roles = [...SPECIALIZATIONS]` (fixed list, not merged with DB values) to prevent comma-separated multi-specialization strings from appearing as single filter options. Tech still merges `TECH_STACK_OPTIONS` with distinct DB values.
+
+**Key files:**
+
+- `lib/types.ts` – `SPECIALIZATIONS`, `TECH_STACK_OPTIONS` constants.
+- `lib/jobs.ts` – `getFilterOptions` uses fixed SPECIALIZATIONS for roles.
+- `app/employer/job-form.tsx` – Specialization tag picker, tech stack tag picker (moved), Work mode label.
+- `app/jobs/jobs-filter.tsx` – Specialization/Work mode labels, active filter text.
+- `app/jobs/page.tsx` – Metadata descriptions updated.
+
+---
+
+## Homepage hero: tech icons, collapse, selected counts
+
+**What was done:**
+
+- **Tech icons:** Technology buttons now show colored icons from the [devicon](https://github.com/devicons/devicon) library via jsDelivr CDN (`cdn.jsdelivr.net`). Each tech (JavaScript, HTML5, Python, Node.js, TypeScript, PHP, C++, React.js, C#, Go, Rust, .NET, Angular, Android, iOS, Ruby) is mapped to a devicon `-original.svg`. C and AWS use inline SVG data URIs as fallbacks (no CDN dependency). `react-icons` installed for potential future use. `next.config.ts` updated with `cdn.jsdelivr.net` remote pattern.
+- **Technology order:** Fixed display order (JavaScript, HTML, Python, Java, SQL, Node.js, TypeScript, PHP, C++, React.js, then remaining). Not alphabetical.
+- **Specialization collapse:** First 10 specializations shown by default (expanded by default, i.e. all visible). "Show more (N)" / "Show less" toggle button after the last visible item. State: `specializationsExpanded` (default `true`).
+- **Technology collapse:** First 10 technologies shown; "Show more (N)" / "Show less" button. State: `techExpanded` (default `false`).
+- **Selected counts:** Green circular badge (solid green bg, white text) appears next to "Specialization" and "Technologies" labels showing how many items are currently selected. Only shown when count > 0.
+
+**Key files:**
+
+- `app/_components/home-hero.tsx` – `DEVICON_CDN`, `DEVICON_ICONS` map, `C_ICON_FALLBACK`, `AWS_ICON_FALLBACK`, `getTechIconUrl`, `HOME_TECH_ORDER`, collapse state, count badges.
+- `next.config.ts` – `cdn.jsdelivr.net` in `images.remotePatterns`.
+- `package.json` – `react-icons` added.
+

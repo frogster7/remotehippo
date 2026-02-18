@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ApplicationWithJob, Job, JobFilters } from "@/lib/types";
+import { SPECIALIZATIONS, TECH_STACK_OPTIONS } from "@/lib/types";
 
 /** Fetch active jobs with optional filters. Used for /jobs list. */
 export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
@@ -15,7 +16,9 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   if (filters.work_types?.length) {
     query = query.in("work_type", filters.work_types);
   }
-  if (filters.job_type) {
+  if (filters.job_types?.length) {
+    query = query.in("job_type", filters.job_types);
+  } else if (filters.job_type) {
     query = query.eq("job_type", filters.job_type);
   }
   if (filters.roles?.length) {
@@ -178,7 +181,7 @@ export async function getEmployersForHomepage(limit = 8): Promise<
   }[];
 }
 
-/** All distinct roles and tech_stack values for filter dropdowns (optional). */
+/** Filter options: specializations are fixed; tech merges presets with distinct DB values. */
 export async function getFilterOptions(): Promise<{
   roles: string[];
   tech: string[];
@@ -186,16 +189,13 @@ export async function getFilterOptions(): Promise<{
   const supabase = await createClient();
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("role, tech_stack")
+    .select("tech_stack")
     .eq("is_active", true);
 
-  const roles = Array.from(
-    new Set((jobs ?? []).map((j) => j.role).filter(Boolean)),
-  ) as string[];
-  const tech = Array.from(
-    new Set((jobs ?? []).flatMap((j) => j.tech_stack ?? []).filter(Boolean)),
-  ) as string[];
-  return { roles: roles.sort(), tech: tech.sort() };
+  const dbTech = (jobs ?? []).flatMap((j) => j.tech_stack ?? []).filter(Boolean);
+  const roles = [...SPECIALIZATIONS];
+  const tech = Array.from(new Set([...TECH_STACK_OPTIONS, ...dbTech])).sort();
+  return { roles, tech };
 }
 
 /** Slug base from title (lowercase, hyphens, alphanumeric). */

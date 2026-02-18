@@ -20,17 +20,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { WORK_TYPES, JOB_TYPES, type Job, type JobFormData } from "@/lib/types";
+import {
+  WORK_TYPES,
+  JOB_TYPES,
+  SPECIALIZATIONS,
+  TECH_STACK_OPTIONS,
+  type Job,
+  type JobFormData,
+} from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
-function parseTechStack(s: string): string[] {
+function parseList(s: string): string[] {
   return s
     .split(/[,;]/)
     .map((t) => t.trim())
     .filter(Boolean);
-}
-
-function techStackToString(arr: string[]): string {
-  return (arr ?? []).join(", ");
 }
 
 type Props = {
@@ -56,16 +61,22 @@ export function JobForm({
 
   const [title, setTitle] = useState(job?.title ?? "");
   const [description, setDescription] = useState(job?.description ?? "");
-  const [role, setRole] = useState(job?.role ?? "");
+  const initialRole = job?.role ?? "";
+  const [specializationsArr, setSpecializationsArr] = useState<string[]>(
+    initialRole ? parseList(initialRole) : [],
+  );
+  const [specializationCustomInput, setSpecializationCustomInput] =
+    useState("");
   const [workType, setWorkType] = useState<JobFormData["work_type"]>(
     job?.work_type ?? "remote",
   );
   const [jobType, setJobType] = useState<JobFormData["job_type"]>(
     job?.job_type ?? "full-time",
   );
-  const [techStackStr, setTechStackStr] = useState(
-    techStackToString(job?.tech_stack ?? []),
+  const [techStackArr, setTechStackArr] = useState<string[]>(
+    job?.tech_stack ?? [],
   );
+  const [techCustomInput, setTechCustomInput] = useState("");
   const [salaryMin, setSalaryMin] = useState(
     job?.salary_min != null ? String(job.salary_min) : "",
   );
@@ -93,10 +104,12 @@ export function JobForm({
     return {
       title,
       description,
-      role,
+      role: specializationsArr.length
+        ? specializationsArr.join(", ")
+        : "Developer",
       work_type: workType,
       job_type: jobType,
-      tech_stack: parseTechStack(techStackStr),
+      tech_stack: techStackArr,
       salary_min: salaryMin ? parseInt(salaryMin, 10) : null,
       salary_max: salaryMax ? parseInt(salaryMax, 10) : null,
       location: location.trim() || null,
@@ -115,6 +128,10 @@ export function JobForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (specializationsArr.length === 0) {
+      setError("Please select or add at least one specialization.");
+      return;
+    }
     setLoading(true);
     const form = buildForm();
     const result =
@@ -169,15 +186,154 @@ export function JobForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="role">Role / position *</Label>
+            <Label>Specialization *</Label>
+            <div className="flex flex-wrap gap-2">
+              {specializationsArr.map((s) => (
+                <Badge
+                  key={s}
+                  variant="secondary"
+                  className="flex items-center gap-1 pr-1"
+                >
+                  {s}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSpecializationsArr((prev) =>
+                        prev.filter((x) => x !== s),
+                      )
+                    }
+                    className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                    disabled={loading}
+                    aria-label={`Remove ${s}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {SPECIALIZATIONS.filter(
+                (s) => !specializationsArr.includes(s),
+              ).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() =>
+                    setSpecializationsArr((prev) =>
+                      prev.includes(s) ? prev : [...prev, s],
+                    )
+                  }
+                  disabled={loading}
+                  className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
             <Input
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Frontend Developer"
-              required
+              value={specializationCustomInput}
+              onChange={(e) => setSpecializationCustomInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseList(specializationCustomInput);
+                if (parsed.length) {
+                  setSpecializationsArr((prev) =>
+                    Array.from(new Set([...prev, ...parsed])),
+                  );
+                  setSpecializationCustomInput("");
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const parsed = parseList(specializationCustomInput);
+                  if (parsed.length) {
+                    setSpecializationsArr((prev) =>
+                      Array.from(new Set([...prev, ...parsed])),
+                    );
+                    setSpecializationCustomInput("");
+                  }
+                }
+              }}
+              placeholder="Or type custom values (comma-separated)"
               disabled={loading}
             />
+            <p className="text-xs text-muted-foreground">
+              Click to add, or type custom values (comma-separated)
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Tech stack</Label>
+            <div className="flex flex-wrap gap-2">
+              {techStackArr.map((t) => (
+                <Badge
+                  key={t}
+                  variant="secondary"
+                  className="flex items-center gap-1 pr-1"
+                >
+                  {t}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTechStackArr((prev) => prev.filter((x) => x !== t))
+                    }
+                    className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                    disabled={loading}
+                    aria-label={`Remove ${t}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {TECH_STACK_OPTIONS.filter((t) => !techStackArr.includes(t)).map(
+                (t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() =>
+                      setTechStackArr((prev) =>
+                        prev.includes(t) ? prev : [...prev, t],
+                      )
+                    }
+                    disabled={loading}
+                    className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                  >
+                    {t}
+                  </button>
+                ),
+              )}
+            </div>
+            <Input
+              value={techCustomInput}
+              onChange={(e) => setTechCustomInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseList(techCustomInput);
+                if (parsed.length) {
+                  setTechStackArr((prev) =>
+                    Array.from(new Set([...prev, ...parsed])),
+                  );
+                  setTechCustomInput("");
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const parsed = parseList(techCustomInput);
+                  if (parsed.length) {
+                    setTechStackArr((prev) =>
+                      Array.from(new Set([...prev, ...parsed])),
+                    );
+                    setTechCustomInput("");
+                  }
+                }
+              }}
+              placeholder="Or type custom values (comma-separated)"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Click to add, or type custom values (comma-separated)
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description (optional)</Label>
@@ -265,7 +421,7 @@ export function JobForm({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Work type</Label>
+              <Label>Work mode</Label>
               <Select
                 value={workType}
                 onValueChange={(v) =>
@@ -304,19 +460,6 @@ export function JobForm({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tech">Tech stack</Label>
-            <Input
-              id="tech"
-              value={techStackStr}
-              onChange={(e) => setTechStackStr(e.target.value)}
-              placeholder="e.g. React, TypeScript, Node.js"
-              disabled={loading}
-            />
-            <p className="text-xs text-muted-foreground">
-              Comma- or semicolon-separated
-            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">

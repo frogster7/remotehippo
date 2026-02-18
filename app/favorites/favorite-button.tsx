@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toggleFavorite } from "@/app/favorites/actions";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ interface FavoriteButtonProps {
   initialIsFavorited: boolean;
   isLoggedIn: boolean;
   variant?: "default" | "ghost" | "icon";
+  icon?: "heart" | "star";
   className?: string;
 }
 
@@ -19,6 +20,7 @@ export function FavoriteButton({
   initialIsFavorited,
   isLoggedIn,
   variant = "default",
+  icon = "heart",
   className = "",
 }: FavoriteButtonProps) {
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
@@ -43,7 +45,7 @@ export function FavoriteButton({
   };
 
   if (variant === "icon") {
-    // Small icon-only button for list view
+    const Icon = icon === "star" ? Star : Heart;
     return (
       <button
         onClick={handleToggle}
@@ -51,7 +53,7 @@ export function FavoriteButton({
         className={`p-1.5 rounded-full hover:bg-accent transition-colors ${className}`}
         aria-label={isFavorited ? "Remove from saved jobs" : "Save job"}
       >
-        <Heart
+        <Icon
           className={`h-4 w-4 ${
             isFavorited
               ? "fill-primary text-primary"
@@ -62,6 +64,7 @@ export function FavoriteButton({
     );
   }
 
+  const Icon = icon === "star" ? Star : Heart;
   return (
     <Button
       onClick={handleToggle}
@@ -69,7 +72,7 @@ export function FavoriteButton({
       variant={variant === "ghost" ? "ghost" : "outline"}
       className={className}
     >
-      <Heart
+      <Icon
         className={`h-4 w-4 mr-2 ${isFavorited ? "fill-primary text-primary" : ""}`}
       />
       {isFavorited ? "Saved" : "Save job"}

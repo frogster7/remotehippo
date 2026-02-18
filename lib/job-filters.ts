@@ -19,12 +19,14 @@ export function parseFilters(
   };
   const salaryMin = get("salary_min");
   const salaryMax = get("salary_max");
+  const jobTypes = getParamArray(searchParams, "job_type") as JobType[];
   return {
     q: get("q") ?? undefined,
     location: get("location") ?? undefined,
     roles: getParamArray(searchParams, "role"),
     work_types: getParamArray(searchParams, "work_type") as WorkType[],
-    job_type: (get("job_type") as JobType) ?? undefined,
+    job_type: jobTypes[0] ?? (get("job_type") as JobType) ?? undefined,
+    job_types: jobTypes.length ? jobTypes : undefined,
     tech: getParamArray(searchParams, "tech"),
     salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
     salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
@@ -37,7 +39,11 @@ export function buildJobsQueryString(filters: JobFilters): string {
   if (filters.location?.trim()) p.set("location", filters.location.trim());
   filters.roles?.forEach((r) => p.append("role", r));
   filters.work_types?.forEach((w) => p.append("work_type", w));
-  if (filters.job_type) p.set("job_type", filters.job_type);
+  if (filters.job_types?.length) {
+    filters.job_types.forEach((t) => p.append("job_type", t));
+  } else if (filters.job_type) {
+    p.set("job_type", filters.job_type);
+  }
   filters.tech?.forEach((t) => p.append("tech", t));
   if (filters.salary_min != null && filters.salary_min > 0) p.set("salary_min", String(filters.salary_min));
   if (filters.salary_max != null && filters.salary_max > 0) p.set("salary_max", String(filters.salary_max));
@@ -52,7 +58,9 @@ export function formatFiltersSummary(filters: JobFilters): string {
   filters.roles?.forEach((r) => parts.push(r));
   if (filters.location?.trim()) parts.push(filters.location);
   filters.work_types?.forEach((w) => parts.push(w));
-  if (filters.job_type) parts.push(filters.job_type);
+  if (filters.job_types?.length) {
+    filters.job_types.forEach((t) => parts.push(t));
+  } else if (filters.job_type) parts.push(filters.job_type);
   filters.tech?.forEach((t) => parts.push(t));
   if (filters.salary_min != null && filters.salary_min > 0)
     parts.push(`Min ${(filters.salary_min / 1000).toFixed(0)}k`);

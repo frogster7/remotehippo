@@ -153,6 +153,8 @@ export interface JobFilters {
   /** Work types; job must match any (e.g. remote, hybrid) */
   work_types?: WorkType[];
   job_type?: JobType;
+  /** Job types (multi-select); job must match any */
+  job_types?: JobType[];
   /** Technologies; job tech_stack must overlap with any */
   tech?: string[];
   salary_min?: number;
@@ -195,4 +197,54 @@ export const APPLICATION_PREFERENCES: {
     label: "Company website",
     description: "Applicants will be redirected to your website to apply",
   },
+];
+
+/** Preset specializations for job form and filters. */
+export const SPECIALIZATIONS: string[] = [
+  "Backend",
+  "Frontend",
+  "Full-stack",
+  "Mobile",
+  "Architecture",
+  "DevOps",
+  "Game dev",
+  "Data analyst & BI",
+  "Big Data / Data Science",
+  "Embedded",
+  "QA/Testing",
+  "Security",
+  "Helpdesk",
+  "Product Management",
+  "Project Management",
+  "Agile",
+  "UI/UX",
+  "Business analyst",
+  "System analyst",
+  "SAP&ERP",
+  "IT admin",
+  "AI/ML",
+];
+
+/** Preset tech stack options for job form and filters. */
+export const TECH_STACK_OPTIONS: string[] = [
+  "JavaScript",
+  "HTML",
+  "SQL",
+  "Python",
+  "Java",
+  "C#",
+  "PHP",
+  "C++",
+  "TypeScript",
+  "Go",
+  "C",
+  "Rust",
+  "Node.js",
+  ".NET",
+  "React.js",
+  "Angular",
+  "Android",
+  "AWS",
+  "iOS",
+  "Ruby",
 ];

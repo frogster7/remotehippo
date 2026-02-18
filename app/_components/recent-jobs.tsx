@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { useDragScroll } from "@/lib/use-drag-scroll";
 import Image from "next/image";
-import { MapPin, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, ChevronRight, X, AlarmClock } from "lucide-react";
 import { formatRelativeTime } from "@/lib/format";
-import { Button } from "@/components/ui/button";
 import { HydrationSafeDiv } from "@/components/hydration-safe-div";
+import { FavoriteButton } from "@/app/favorites/favorite-button";
 import type { Job } from "@/lib/types";
 
 function formatSalary(min: number | null, max: number | null): string {
@@ -18,67 +17,145 @@ function formatSalary(min: number | null, max: number | null): string {
   return `Up to ${(max! / 1000).toFixed(0)}k`;
 }
 
-function RecentJobCard({ job, postedAt }: { job: Job; postedAt: string }) {
+function RecentJobCard({
+  job,
+  postedAt,
+  isFavorited,
+  isLoggedIn,
+  showSuperOffer,
+}: {
+  job: Job;
+  postedAt: string;
+  isFavorited: boolean;
+  isLoggedIn: boolean;
+  showSuperOffer: boolean;
+}) {
   const companyName =
     job.employer?.company_name ?? job.employer?.full_name ?? "Company";
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
 
   return (
-    <Link
-      href={`/jobs/${job.slug}`}
-      className="flex w-72 shrink-0 flex-col rounded-xl border bg-card p-4 shadow-sm transition-colors hover:border-primary/30 hover:shadow-md scroll-snap-align-start"
+    <HydrationSafeDiv
+      className="relative flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md transition-all hover:shadow-lg scroll-snap-align-start"
+      style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.06)" }}
     >
-      <HydrationSafeDiv className="flex items-start justify-between gap-2">
-        {job.employer?.company_logo_url ? (
-          <HydrationSafeDiv className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+      {/* Top patterned area */}
+      <div
+        className="relative h-20 shrink-0"
+        aria-hidden
+        style={{
+          background: `linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.6) 100%)`,
+          backgroundImage: `radial-gradient(circle at 20% 30%, hsl(var(--muted)) 0%, transparent 50%),
+            linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 100%)`,
+        }}
+      >
+        {/* Subtle line pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 8px,
+              hsl(var(--foreground) / 0.08) 8px,
+              hsl(var(--foreground) / 0.08) 9px
+            )`,
+          }}
+        />
+        {/* Logo - top left */}
+        <Link
+          href={`/jobs/${job.slug}`}
+          className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm"
+        >
+          {job.employer?.company_logo_url ? (
             <Image
               src={job.employer.company_logo_url}
               alt=""
-              fill
-              className="object-contain"
-              sizes="40px"
+              width={48}
+              height={48}
+              className="object-contain p-1"
             />
-          </HydrationSafeDiv>
-        ) : (
-          <HydrationSafeDiv className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-            {companyName.slice(0, 2).toUpperCase()}
-          </HydrationSafeDiv>
+          ) : (
+            <span className="text-sm font-semibold text-primary">
+              {companyName.slice(0, 2).toUpperCase()}
+            </span>
+          )}
+        </Link>
+        {/* Top right: Super offer badge, then X + Star */}
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+          {showSuperOffer && (
+            <span className="rounded-md bg-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-950 shadow-sm">
+              Super offer
+            </span>
+          )}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setDismissed(true);
+              }}
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <FavoriteButton
+              jobId={job.id}
+              initialIsFavorited={isFavorited}
+              isLoggedIn={isLoggedIn}
+              variant="icon"
+              icon="star"
+              className="rounded-full p-1.5"
+            />
+          </div>
+        </div>
+      </div>
+      {/* Content */}
+      <Link href={`/jobs/${job.slug}`} className="flex flex-1 flex-col p-5 pt-4">
+        <h3 className="font-heading text-base font-bold leading-tight text-heading line-clamp-2">
+          {job.title}
+        </h3>
+        {(job.salary_min != null || job.salary_max != null) && (
+          <p
+            className="mt-1.5 text-sm font-semibold"
+            style={{ color: "hsl(var(--salary))" }}
+          >
+            {formatSalary(job.salary_min, job.salary_max)}
+          </p>
         )}
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {postedAt}
-        </span>
-      </HydrationSafeDiv>
-      <h3 className="mt-3 font-semibold text-primary line-clamp-2">
-        {job.title}
-      </h3>
-      <p className="mt-1 text-sm text-muted-foreground">{companyName}</p>
-      <HydrationSafeDiv className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-sm font-medium text-muted-foreground line-clamp-1">
+          {companyName}
+        </p>
         {job.location && (
-          <span className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
+          <span className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
             {job.location}
           </span>
         )}
-        {(job.salary_min != null || job.salary_max != null) && (
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
-            {formatSalary(job.salary_min, job.salary_max)}
-          </span>
-        )}
-      </HydrationSafeDiv>
-    </Link>
+        <p className="mt-1 text-xs text-muted-foreground">{postedAt}</p>
+      </Link>
+    </HydrationSafeDiv>
   );
 }
 
 interface RecentJobsProps {
   jobs: Job[];
+  favoritedJobIds: Set<string>;
+  isLoggedIn: boolean;
 }
 
-const CARD_WIDTH = 288; // w-72 = 18rem = 288px
+const CARD_WIDTH = 288;
 const GAP = 16;
 
-export function RecentJobs({ jobs }: RecentJobsProps) {
-  const { ref: scrollRef, handlers: dragHandlers } =
-    useDragScroll<HTMLDivElement>();
+export function RecentJobs({
+  jobs,
+  favoritedJobIds,
+  isLoggedIn,
+}: RecentJobsProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -92,58 +169,44 @@ export function RecentJobs({ jobs }: RecentJobsProps) {
   if (jobs.length === 0) return null;
 
   return (
-    <section className="border-t bg-muted/30 py-10 md:py-14">
+    <section className="rounded-t-3xl border-t border-border/80 bg-card py-12 md:py-16">
       <HydrationSafeDiv className="container mx-auto px-4">
-        <HydrationSafeDiv className="flex items-center justify-between gap-4">
-          <HydrationSafeDiv className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" aria-hidden />
-            <h2 className="text-xl font-semibold tracking-tight">
-              Recently posted jobs
-            </h2>
+        <HydrationSafeDiv className="flex items-center gap-3">
+          <HydrationSafeDiv className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10">
+            <AlarmClock className="h-5 w-5 text-destructive" aria-hidden />
           </HydrationSafeDiv>
-          <HydrationSafeDiv className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 shrink-0 rounded-full"
-              onClick={() => scroll("left")}
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 shrink-0 rounded-full"
-              onClick={() => scroll("right")}
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </HydrationSafeDiv>
+          <h2 className="font-heading text-xl font-bold tracking-tight text-heading md:text-2xl">
+            Latest recommendations
+          </h2>
         </HydrationSafeDiv>
-        <HydrationSafeDiv
-          ref={scrollRef}
-          {...dragHandlers}
-          className="mt-6 flex cursor-grab gap-4 overflow-x-auto pb-2 scroll-smooth scrollbar-hide [scroll-snap-type:x_mandatory] active:cursor-grabbing"
-        >
-          {jobs.map((job) => (
-            <RecentJobCard
-              key={job.id}
-              job={job}
-              postedAt={formatRelativeTime(job.created_at)}
-            />
-          ))}
-        </HydrationSafeDiv>
-        <HydrationSafeDiv className="mt-6 text-center">
-          <Link
-            href="/jobs"
-            className="text-sm font-medium text-primary hover:underline"
+        <HydrationSafeDiv className="relative mt-6">
+          <HydrationSafeDiv
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scroll-smooth scrollbar-hide [scroll-snap-type:x_mandatory] pb-2"
+            style={{ cursor: "default" }}
           >
-            View all jobs →
-          </Link>
+            {jobs.map((job, index) => (
+              <RecentJobCard
+                key={job.id}
+                job={job}
+                postedAt={formatRelativeTime(job.created_at)}
+                isFavorited={favoritedJobIds.has(job.id)}
+                isLoggedIn={isLoggedIn}
+                showSuperOffer={
+                  (job.salary_max != null && job.salary_max >= 15000) ||
+                  index % 2 === 0
+                }
+              />
+            ))}
+          </HydrationSafeDiv>
+          <button
+            type="button"
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition hover:bg-blue-700"
+            aria-label="Scroll to next jobs"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </HydrationSafeDiv>
       </HydrationSafeDiv>
     </section>

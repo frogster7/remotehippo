@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { FavoriteButton } from "@/app/favorites/favorite-button";
 import type { Job } from "@/lib/types";
@@ -20,69 +21,102 @@ function formatSalary(min: number | null, max: number | null): string {
   return `Up to ${(max! / 1000).toFixed(0)}k`;
 }
 
-export function JobCard({ job, postedAt, isFavorited, isLoggedIn }: JobCardProps) {
+const companyName = (job: Job) =>
+  job.employer?.company_name ?? job.employer?.full_name ?? "Company";
+
+export function JobCard({
+  job,
+  postedAt,
+  isFavorited,
+  isLoggedIn,
+}: JobCardProps) {
+  const name = companyName(job);
   return (
-    <Card className="transition-colors hover:bg-muted/50">
+    <Card className="rounded-2xl border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-3">
-          <Link href={`/jobs/${job.slug}`} className="flex-1 min-w-0">
-            <h2 className="font-semibold leading-tight hover:underline">
-              {job.title}
-            </h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">{job.role}</p>
+        <div className="flex items-start gap-4">
+          {/* Company logo – top left */}
+          <Link
+            href={`/jobs/${job.slug}`}
+            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted"
+          >
+            {job.employer?.company_logo_url ? (
+              <Image
+                src={job.employer.company_logo_url}
+                alt=""
+                width={48}
+                height={48}
+                className="object-contain p-1"
+              />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-sm font-semibold text-primary">
+                {name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </Link>
-          <FavoriteButton
-            jobId={job.id}
-            initialIsFavorited={isFavorited}
-            isLoggedIn={isLoggedIn}
-            variant="icon"
-          />
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>{job.work_type}</span>
-          <span aria-hidden>·</span>
-          <span>{job.job_type}</span>
-          {job.closed_at && (
-            <>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <Link href={`/jobs/${job.slug}`} className="min-w-0 flex-1">
+                <h2 className="font-heading text-[1.3rem] font-semibold leading-tight text-heading hover:underline">
+                  {job.title}
+                </h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {job.role}
+                </p>
+              </Link>
+              <FavoriteButton
+                jobId={job.id}
+                initialIsFavorited={isFavorited}
+                isLoggedIn={isLoggedIn}
+                variant="icon"
+              />
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>{job.work_type}</span>
               <span aria-hidden>·</span>
-              <span>Filled</span>
-            </>
-          )}
+              <span>{job.job_type}</span>
+              {job.closed_at && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>Filled</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <Link href={`/jobs/${job.slug}`}>
-          <p className="line-clamp-2 text-sm text-muted-foreground">
-            {job.description}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {job.tech_stack?.length > 0 && (
-              <span className="flex flex-wrap gap-1.5">
-                {job.tech_stack.slice(0, 6).map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </span>
-            )}
-            <span className="text-xs text-muted-foreground">
-              {postedAt && `Posted ${postedAt}`}
+          <div className="flex flex-wrap items-center justify-between gap-2 pl-16">
+            <div className="flex flex-wrap items-center gap-2">
+              {job.tech_stack?.length > 0 && (
+                <span className="flex flex-wrap gap-1.5">
+                  {job.tech_stack.slice(0, 6).map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </span>
+              )}
               {(job.salary_min != null || job.salary_max != null) && (
-                <>
-                  {postedAt && " · "}
+                <span className="text-xs font-semibold text-primary">
                   {formatSalary(job.salary_min, job.salary_max)}
-                </>
+                </span>
               )}
               {job.location && (
-                <>
-                  {(postedAt || job.salary_min != null || job.salary_max != null) && " · "}
+                <span className="text-xs text-muted-foreground">
                   {job.location}
-                </>
+                </span>
               )}
-            </span>
+            </div>
+            {postedAt && (
+              <span className="shrink-0 text-xs text-muted-foreground">
+                Posted {postedAt}
+              </span>
+            )}
           </div>
         </Link>
       </CardContent>

@@ -7,7 +7,6 @@ import { JobCard } from "./job-card";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site";
 import { formatRelativeTime } from "@/lib/format";
-import type { JobFilters } from "@/lib/types";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -33,8 +32,8 @@ export async function generateMetadata({
   const title = `Jobs${filterLabel}`;
   const description =
     parts.length > 0
-      ? `Remote-friendly tech jobs: ${parts.join(", ")}. Filter by role, work type, salary and more.`
-      : "Browse remote-friendly tech jobs. Filter by role, work type, job type, tech stack and salary.";
+      ? `Remote-friendly tech jobs: ${parts.join(", ")}. Filter by specialization, work mode, salary and more.`
+      : "Browse remote-friendly tech jobs. Filter by specialization, work mode, job type, tech stack and salary.";
 
   return {
     title,
@@ -64,7 +63,6 @@ export default async function JobsPage({
   const params = await searchParams;
   const filters = parseFilters(params ?? {});
 
-  // Get user and favorited job IDs
   const supabase = await createClient();
   const {
     data: { user },
@@ -77,59 +75,71 @@ export default async function JobsPage({
   ]);
 
   return (
-    <main className="min-h-screen bg-muted/30">
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Tech jobs</h1>
-          <p className="mt-1 text-muted-foreground">
-            Remote-friendly roles · Filter by role, work type and salary
-          </p>
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-[1100px] px-4 pb-12">
+        {/* Page header */}
+        <div className="border-b border-border/80 pt-4 pb-4">
+          <h1 className="font-heading text-xl font-bold tracking-tight text-heading sm:text-3xl">
+            Browse remote tech jobs
+          </h1>
         </div>
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* Left sidebar – filters */}
-          <aside className="w-full shrink-0 lg:w-80">
-            <Suspense fallback={<div className="h-64 animate-pulse rounded-lg border bg-card" />}>
-              <JobsFilter
-                roles={filterOptions.roles}
-                techOptions={filterOptions.tech}
-                isLoggedIn={!!user}
-              />
-            </Suspense>
-          </aside>
+        {/* Sticky search + filters bar */}
+        <div className="sticky top-14 z-10 border-b border-border/80 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+          <Suspense
+            fallback={
+              <div className="h-24 animate-pulse rounded-2xl border border-border/80 bg-card" />
+            }
+          >
+            <JobsFilter
+              roles={filterOptions.roles}
+              techOptions={filterOptions.tech}
+              isLoggedIn={!!user}
+              layout="horizontal"
+            />
+          </Suspense>
+        </div>
 
-          {/* Right – job listings */}
-          <section className="min-w-0 flex-1 space-y-4">
-            {jobs.length === 0 ? (
-              <div className="rounded-lg border border-dashed bg-card p-12 text-center text-muted-foreground">
-                <Briefcase className="mx-auto h-12 w-12 opacity-50" aria-hidden />
-                <p className="mt-3 font-medium">No jobs match your filters.</p>
-                <p className="mt-1 text-sm">Try adjusting filters or check back later.</p>
+        {/* Job list */}
+        <section className="pt-6">
+          {jobs.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/80 bg-card p-12 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                <Briefcase
+                  className="h-7 w-7 text-muted-foreground"
+                  aria-hidden
+                />
               </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-                  <span>
-                    {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
-                  </span>
-                  <span>Sorted by newest</span>
-                </div>
-                <ul className="space-y-3">
-                  {jobs.map((job) => (
-                    <li key={job.id}>
-                      <JobCard
-                        job={job}
-                        postedAt={formatRelativeTime(job.created_at)}
-                        isFavorited={favoritedJobIds.has(job.id)}
-                        isLoggedIn={!!user}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </section>
-        </div>
+              <p className="mt-4 font-heading font-semibold text-heading">
+                No jobs match your filters
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Try adjusting filters or check back later.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                <span className="font-medium text-foreground">
+                  {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                </span>
+                <span className="text-muted-foreground">Sorted by newest</span>
+              </div>
+              <ul className="space-y-4">
+                {jobs.map((job) => (
+                  <li key={job.id}>
+                    <JobCard
+                      job={job}
+                      postedAt={formatRelativeTime(job.created_at)}
+                      isFavorited={favoritedJobIds.has(job.id)}
+                      isLoggedIn={!!user}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
       </div>
     </main>
   );
