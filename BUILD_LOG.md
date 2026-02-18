@@ -577,3 +577,30 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 **Notes:** Job form remains a single shared component for create and edit; only the page wrappers differ. Storage and API for list fields unchanged (newline-separated strings).
 
+---
+
+## Jobs page & filter UX (search bar, sticky, apply flow, styling)
+
+**What was done:**
+
+- **Jobs page layout:** White background (`bg-white`). Hero section with headline "Find your next role." (smaller size), job count, no "Niche Tech Jobs" label. Sticky search bar at `top-0` so it sticks at the very top when scrolled; no bottom border on sticky bar.
+- **Search bar:** Homepage-style card (keyword input + location + filter icon + Search button). Location is a typeable input with dropdown offering only "Remote"; key syncs with URL for remount. Single card wraps search form and collapsible filters.
+- **Filters:** Filter icon (SlidersHorizontal) to the left of Search button toggles the filters panel. Panel collapses with grid transition (`grid-rows-[0fr]` / `grid-rows-[1fr]`). Filters collapsed by default. Apply flow: selections live in `pendingFilters`; "Apply filters" button at bottom center applies and closes panel. Salary filter removed from horizontal and sidebar layouts; salary removed from `getFiltersFromSearchParams`, `filtersToParams`, `getActiveFilterLabels`, and `lib/job-filters.ts`.
+- **Active filters row:** Outside the collapsible panel; always visible when there are active filters. Shows pills (removable), Clear button (after last pill), Save this search on the right (`ml-auto`). Row hidden when empty (`activeFilters.length > 0` only). Primary top border (`border-primary/30`).
+- **Borders:** Search/filter card and job cards use primary borders (`border-primary/30`; job cards `hover:border-primary/60`). Home hero search and specialization card use `border-primary/30`. Navbar: `border-b border-primary/100`, `max-w-[1200px]`, no horizontal padding (`px-4` removed).
+- **Filter chips:** Specialization and Technology buttons: unselected `bg-muted text-muted-foreground` (darker background); selected `border-primary bg-primary text-primary-foreground`. Show more/Show less buttons styled with border and muted bg for contrast.
+- **Shared tech icons:** `lib/tech-icons.ts` – `getTechIconUrl()` and devicon/fallback constants; used by home hero and jobs filter.
+
+**Key files:**
+
+- `app/jobs/page.tsx` – white bg, hero, sticky bar, no border under bar.
+- `app/jobs/jobs-filter.tsx` – horizontal: one card (search + collapsible filters + active filters row), location input + Remote dropdown, filter icon, pending filters + Apply, Clear/Save placement, primary borders, chip contrast.
+- `app/jobs/job-card.tsx` – `border border-primary/30`.
+- `app/jobs/save-search-button.tsx` – `gap-2` (no w-full); wrapped in `ml-auto` on jobs page.
+- `app/_components/header.tsx` – `border-b border-primary/100`, `max-w-[1200px]`, no px.
+- `app/_components/home-hero.tsx` – search and filters card `border-primary/30`.
+- `lib/tech-icons.ts` – shared getTechIconUrl.
+- `lib/job-filters.ts` – salary removed from parseFilters, buildJobsQueryString, formatFiltersSummary.
+
+**Notes:** Filter state in URL; Apply pushes `pendingFilters` to URL. Location dropdown only suggests Remote; user can type any location.
+

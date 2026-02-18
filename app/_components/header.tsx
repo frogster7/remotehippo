@@ -19,17 +19,29 @@ export async function Header() {
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] ?? null;
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto px-4 h-14 flex items-center justify-between" suppressHydrationWarning>
+    <header className="border-b border-primary/100">
+      <div
+        className="mx-auto max-w-[1200px] h-14 flex items-center justify-between"
+        suppressHydrationWarning
+      >
         <div className="flex items-center gap-6">
-          <Link href="/" className="shrink-0 font-semibold text-primary hover:text-primary/90">
+          <Link
+            href="/"
+            className="shrink-0 font-semibold text-primary hover:text-primary/90"
+          >
             Niche Tech Job Board
           </Link>
           <nav className="hidden md:flex items-center gap-5 text-base">
-            <Link href="/jobs" className="text-muted-foreground hover:text-foreground font-medium">
+            <Link
+              href="/jobs"
+              className="text-muted-foreground hover:text-foreground font-medium"
+            >
               Jobs
             </Link>
-            <Link href="/blog" className="text-muted-foreground hover:text-foreground font-medium">
+            <Link
+              href="/blog"
+              className="text-muted-foreground hover:text-foreground font-medium"
+            >
               Blog
             </Link>
           </nav>

@@ -17,8 +17,6 @@ export function parseFilters(
     const v = searchParams[k];
     return Array.isArray(v) ? v[0] : v;
   };
-  const salaryMin = get("salary_min");
-  const salaryMax = get("salary_max");
   const jobTypes = getParamArray(searchParams, "job_type") as JobType[];
   return {
     q: get("q") ?? undefined,
@@ -28,8 +26,6 @@ export function parseFilters(
     job_type: jobTypes[0] ?? (get("job_type") as JobType) ?? undefined,
     job_types: jobTypes.length ? jobTypes : undefined,
     tech: getParamArray(searchParams, "tech"),
-    salary_min: salaryMin ? parseInt(salaryMin, 10) : undefined,
-    salary_max: salaryMax ? parseInt(salaryMax, 10) : undefined,
   };
 }
 
@@ -45,8 +41,6 @@ export function buildJobsQueryString(filters: JobFilters): string {
     p.set("job_type", filters.job_type);
   }
   filters.tech?.forEach((t) => p.append("tech", t));
-  if (filters.salary_min != null && filters.salary_min > 0) p.set("salary_min", String(filters.salary_min));
-  if (filters.salary_max != null && filters.salary_max > 0) p.set("salary_max", String(filters.salary_max));
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }
@@ -62,9 +56,5 @@ export function formatFiltersSummary(filters: JobFilters): string {
     filters.job_types.forEach((t) => parts.push(t));
   } else if (filters.job_type) parts.push(filters.job_type);
   filters.tech?.forEach((t) => parts.push(t));
-  if (filters.salary_min != null && filters.salary_min > 0)
-    parts.push(`Min ${(filters.salary_min / 1000).toFixed(0)}k`);
-  if (filters.salary_max != null && filters.salary_max > 0)
-    parts.push(`Max ${(filters.salary_max / 1000).toFixed(0)}k`);
   return parts.length > 0 ? parts.join(" · ") : "All jobs";
 }

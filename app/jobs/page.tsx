@@ -1,6 +1,11 @@
 import { Suspense } from "react";
 import { Briefcase } from "lucide-react";
-import { getJobs, getFilterOptions, getFavoritedJobIds } from "@/lib/jobs";
+import {
+  getJobs,
+  getFilterOptions,
+  getFavoritedJobIds,
+  getActiveJobCount,
+} from "@/lib/jobs";
 import { parseFilters, buildJobsQueryString } from "@/lib/job-filters";
 import { JobsFilter } from "./jobs-filter";
 import { JobCard } from "./job-card";
@@ -68,24 +73,34 @@ export default async function JobsPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [jobs, filterOptions, favoritedJobIds] = await Promise.all([
+  const [jobs, filterOptions, favoritedJobIds, jobCount] = await Promise.all([
     getJobs(filters),
     getFilterOptions(),
     getFavoritedJobIds(user?.id),
+    getActiveJobCount(),
   ]);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-white">
       <div className="mx-auto max-w-[1100px] px-4 pb-12">
-        {/* Page header */}
-        <div className="border-b border-border/80 pt-4 pb-4">
-          <h1 className="font-heading text-xl font-bold tracking-tight text-heading sm:text-3xl">
-            Browse remote tech jobs
-          </h1>
-        </div>
+        {/* Hero section */}
+        <section className="relative overflow-hidden rounded-b-2xl pb-3 pt-6">
+          <div className="pt-0 pb-2">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-heading sm:text-3xl md:text-4xl">
+              Find your next role.
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                {jobCount.toLocaleString()}
+              </span>{" "}
+              {jobCount === 1 ? "job" : "jobs"} from companies that value remote
+              and hybrid work.
+            </p>
+          </div>
+        </section>
 
-        {/* Sticky search + filters bar */}
-        <div className="sticky top-14 z-10 border-b border-border/80 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+        {/* Sticky search + filters – sticks at very top when scrolled */}
+        <div className="sticky top-0 z-20 -mt-1 bg-white pt-3 pb-3">
           <Suspense
             fallback={
               <div className="h-24 animate-pulse rounded-2xl border border-border/80 bg-card" />

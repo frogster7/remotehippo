@@ -32,13 +32,13 @@ export function JobCard({
 }: JobCardProps) {
   const name = companyName(job);
   return (
-    <Card className="rounded-2xl border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
+    <Card className="rounded-2xl border border-primary/100 shadow-sm transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
       <CardHeader className="pb-2">
         <div className="flex items-start gap-4">
           {/* Company logo – top left */}
           <Link
             href={`/jobs/${job.slug}`}
-            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted"
+            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border/30 bg-muted"
           >
             {job.employer?.company_logo_url ? (
               <Image
