@@ -4,62 +4,62 @@
 
 @layer base {
   :root {
-    /* Rustic: terracotta, sage, cream, warm browns */
-    --background: 40 33% 97%;
-    --foreground: 25 25% 18%;
-    --card: 35 30% 99%;
-    --card-foreground: 25 25% 18%;
-    --popover: 35 30% 99%;
-    --popover-foreground: 25 25% 18%;
-    --primary: 18 65% 42%;
+    /* Forest + amber palette */
+    --background: 48 26% 96%;
+    --foreground: 158 18% 16%;
+    --card: 48 24% 99%;
+    --card-foreground: 158 18% 16%;
+    --popover: 48 24% 99%;
+    --popover-foreground: 158 18% 16%;
+    --primary: 160 52% 33%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 85 22% 88%;
-    --secondary-foreground: 85 25% 22%;
-    --muted: 35 28% 93%;
-    --muted-foreground: 25 15% 42%;
-    --accent: 28 55% 55%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 55% 45%;
+    --secondary: 70 22% 88%;
+    --secondary-foreground: 160 22% 24%;
+    --muted: 54 22% 92%;
+    --muted-foreground: 160 10% 40%;
+    --accent: 158 30% 90%;
+    --accent-foreground: 158 20% 18%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 35 22% 88%;
-    --input: 35 22% 88%;
-    --ring: 18 65% 42%;
-    --heading: 25 28% 12%;
-    --chart-1: 18 65% 42%;
-    --chart-2: 85 25% 38%;
-    --chart-3: 28 55% 55%;
-    --chart-4: 45 40% 45%;
-    --chart-5: 15 50% 40%;
-    --salary: 85 30% 32%;
+    --border: 54 16% 84%;
+    --input: 54 16% 84%;
+    --ring: 160 52% 33%;
+    --heading: 158 30% 13%;
+    --chart-1: 160 52% 33%;
+    --chart-2: 38 76% 52%;
+    --chart-3: 192 42% 42%;
+    --chart-4: 18 74% 52%;
+    --chart-5: 330 60% 48%;
+    --salary: 142 52% 35%;
     --radius: 0.625rem;
   }
   .dark {
-    --background: 25 22% 9%;
-    --foreground: 40 20% 92%;
-    --card: 25 20% 12%;
-    --card-foreground: 40 20% 92%;
-    --popover: 25 20% 12%;
-    --popover-foreground: 40 20% 92%;
-    --primary: 18 60% 48%;
+    --background: 162 20% 10%;
+    --foreground: 52 20% 93%;
+    --card: 162 18% 13%;
+    --card-foreground: 52 20% 93%;
+    --popover: 162 18% 13%;
+    --popover-foreground: 52 20% 93%;
+    --primary: 160 54% 46%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 85 18% 22%;
-    --secondary-foreground: 85 30% 82%;
-    --muted: 25 18% 18%;
-    --muted-foreground: 40 12% 58%;
-    --accent: 28 50% 45%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 50% 42%;
+    --secondary: 162 12% 22%;
+    --secondary-foreground: 64 18% 82%;
+    --muted: 162 12% 18%;
+    --muted-foreground: 54 12% 64%;
+    --accent: 158 22% 26%;
+    --accent-foreground: 52 20% 93%;
+    --destructive: 0 62% 52%;
     --destructive-foreground: 0 0% 98%;
-    --border: 25 18% 22%;
-    --input: 25 18% 22%;
-    --ring: 18 60% 48%;
-    --heading: 40 18% 95%;
-    --chart-1: 18 60% 48%;
-    --chart-2: 85 28% 45%;
-    --chart-3: 28 50% 50%;
-    --chart-4: 45 35% 50%;
-    --chart-5: 15 45% 45%;
-    --salary: 85 35% 48%;
+    --border: 162 10% 24%;
+    --input: 162 10% 24%;
+    --ring: 160 54% 46%;
+    --heading: 50 30% 96%;
+    --chart-1: 160 54% 46%;
+    --chart-2: 38 72% 56%;
+    --chart-3: 192 42% 52%;
+    --chart-4: 18 74% 58%;
+    --chart-5: 330 60% 58%;
+    --salary: 142 46% 52%;
   }
 }
 

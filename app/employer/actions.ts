@@ -50,6 +50,7 @@ export async function createJob(form: JobFormData): Promise<{ error?: string }> 
     what_we_offer: form.what_we_offer?.trim() || null,
     good_to_have: form.good_to_have?.trim() || null,
     benefits: form.benefits?.trim() || null,
+    screening_questions: form.screening_questions ?? [],
   });
   if (error) return { error: error.message };
   revalidatePath("/employer/dashboard");
@@ -89,6 +90,7 @@ export async function updateJob(
       what_we_offer: form.what_we_offer?.trim() || null,
       good_to_have: form.good_to_have?.trim() || null,
       benefits: form.benefits?.trim() || null,
+      screening_questions: form.screening_questions ?? [],
     })
     .eq("id", jobId);
   if (error) return { error: error.message };

@@ -5,7 +5,6 @@ import {
   uploadCv,
   uploadLogo,
   deleteStorageFile,
-  createSignedCvUrl,
   CV_BUCKET,
   LOGO_BUCKET,
 } from "@/lib/storage";

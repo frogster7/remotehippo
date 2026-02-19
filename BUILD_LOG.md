@@ -52,7 +52,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 **Database (from migration):**
 
 - **Enums:** `profile_role` (employer, job_seeker), `work_type` (remote, hybrid), `job_type` (full-time, contract).
-- **Tables:** `profiles` (id → auth.users, role, full*name, company*_, created*at), `jobs` (employer_id → profiles, title, slug, description, tech_stack, role, work_type, job_type, salary*_, location, eu_timezone_friendly, is_active, created_at, updated_at), `job_favorites` (user_id, job_id, unique pair).
+- **Tables:** `profiles` (id → auth.users, role, full*name, company, createdat), `jobs` (employer_id → profiles, title, slug, description, tech_stack, role, work_type, job_type, salary*, location, eu_timezone_friendly, is_active, created_at, updated_at), `job_favorites` (user_id, job_id, unique pair).
 - **Triggers:** `handle_new_user` – on `auth.users` INSERT, creates row in `profiles` using `raw_user_meta_data` (full_name, role). `jobs_updated_at` – sets `updated_at` on jobs UPDATE.
 - **RLS:** Profiles viewable by all, update/delete own. Jobs: public sees active only; employers see and manage own. Favorites: users see and manage own.
 
@@ -279,7 +279,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 **Key files (steps 1–4):**
 
 - Migrations: `002_job_application_fields.sql`, `003_job_closed_at.sql` (run after 001).
-- `lib/format.ts`, `lib/types.ts` (JobFilters.eu*timezone_friendly, Job closed_at / application*\*).
+- `lib/format.ts`, `lib/types.ts` (JobFilters.eu*timezone_friendly, Job closed_at / application*).
 - `lib/jobs.ts` (application/closed_at in selects, getEmployerPublicProfile, getActiveJobsByEmployer, getEmployerIdsWithActiveJobs).
 - `app/employer/actions.ts` (closeJob, reopenJob), `app/employer/close-reopen-button.tsx`, `app/employer/[id]/page.tsx`.
 - `app/jobs/jobs-filter.tsx` (EU checkbox), `app/jobs/page.tsx`, `app/jobs/[slug]/page.tsx`, `app/jobs/job-card.tsx` (postedAt, Filled badge).
@@ -346,17 +346,17 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 **What was done:**
 
-- **Migration 006 – User & company profiles + applications:** New enum `application_preference` ('website' | 'email'). On `profiles`: added `last_name`, `phone_number`, `cv_file_url`, `company_about`, `company_location`, `application_preference`. Trigger `handle_new_user` updated to set these from signup metadata. New table `applications` (job*id, applicant_id, applicant*_, cv*url, cover_letter*_, status, applied_at) with RLS: users can insert/view own; employers can view for their jobs.
+- **Migration 006 – User & company profiles + applications:** New enum `application_preference` ('website' | 'email'). On `profiles`: added `last_name`, `phone_number`, `cv_file_url`, `company_about`, `company_location`, `application_preference`. Trigger `handle_new_user` updated to set these from signup metadata. New table `applications` (job*id, applicant_id, applicant, cvurl, cover_letter*, status, applied_at) with RLS: users can insert/view own; employers can view for their jobs.
 - **Types (`lib/types.ts`):** `ProfileRole`, `ApplicationPreference`, full `Profile`, `UserProfile`, `CompanyProfile`, `Application`, `ApplicationFormData`, `APPLICATION_PREFERENCES`. `Job.employer` extended with optional `company_about`, `company_location`, `application_preference`.
 - **Separate registration:** `/register` shows two cards (Job Seeker / Company). `/register/user` – form: first name, last name, email, phone, password; signUp with `role: 'job_seeker'`, `full_name`, `last_name`, `phone_number`. `/register/company` – form: company name, logo URL (optional), about, location, website (optional), application preference (email vs website), email, password; signUp with `role: 'employer'` and company metadata. Old single `RegisterForm` at `app/register/register-form.tsx` is unused.
-- **Storage (migration 007 + `lib/storage.ts`):** Buckets `user-cvs` (private, 10 MB, PDF/DOC/DOCX) and `company-logos` (public, 2 MB, images). Paths `{user_id}/{filename}`. RLS so users manage only their own folder. Helpers: `uploadCv`, `uploadLogo`, `deleteStorageFile`, `getPublicUrl`, `createSignedCvUrl`. Validation: `CV_ALLOWED_TYPES/EXTENSIONS`, `LOGO_*`, `isAllowedCvType`, `isAllowedLogoFileName`, etc. **Note:** `profiles.cv_file_url` stores the **path** (e.g. `userId/file.pdf`); use `createSignedCvUrl` when a URL is needed.
+- **Storage (migration 007 + `lib/storage.ts`):** Buckets `user-cvs` (private, 10 MB, PDF/DOC/DOCX) and `company-logos` (public, 2 MB, images). Paths `{user_id}/{filename}`. RLS so users manage only their own folder. Helpers: `uploadCv`, `uploadLogo`, `deleteStorageFile`, `getPublicUrl`, `createSignedCvUrl`. Validation: `CV_ALLOWED_TYPES/EXTENSIONS`, `LOGO_`, `isAllowedCvType`, `isAllowedLogoFileName`, etc. **Note:** `profiles.cv_file_url` stores the **path** (e.g. `userId/file.pdf`); use `createSignedCvUrl` when a URL is needed.
 
 **Key files:**
 
 - `supabase/migrations/006_user_and_company_profiles.sql`, `007_storage_buckets.sql`
 - `lib/types.ts` (Profile, Application, APPLICATION_PREFERENCES)
 - `lib/storage.ts` (upload/delete/signed URL, validation)
-- `app/register/page.tsx` (two cards), `app/register/user/*`, `app/register/company/*`
+- `app/register/page.tsx` (two cards), `app/register/user/`_, `app/register/company/_`
 
 **Not done yet (continue in new chat):** (None; apply flow done in next section.)
 
@@ -481,12 +481,13 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ## Quick reference
 
+
 | Need to…                                    | Look at…                                                                                                                                                    |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Change Supabase env                         | `.env.local`, `.env.example`                                                                                                                                |
 | Change DB or RLS                            | `supabase/migrations/001_initial_schema.sql` (then re-run or add new migration)                                                                             |
-| Fix auth (login/register)                   | `app/login/*`, `app/register/*`, `app/auth/callback/route.ts`                                                                                               |
-| Fix profile                                 | `app/profile/*`, RLS on `profiles`                                                                                                                          |
+| Fix auth (login/register)                   | `app/login/`_, `app/register/_`, `app/auth/callback/route.ts`                                                                                               |
+| Fix profile                                 | `app/profile/`*, RLS on `profiles`                                                                                                                          |
 | Fix header / auth state                     | `app/_components/header.tsx`, `app/layout.tsx`                                                                                                              |
 | Jobs list / filters                         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                     |
 | Job detail                                  | `app/jobs/[slug]/page.tsx`, `lib/jobs.ts`                                                                                                                   |
@@ -509,9 +510,12 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Header (Jobs, Blog, account, heart)         | `app/_components/header.tsx`, `app/_components/header-nav.tsx`, `components/ui/dropdown-menu.tsx`.                                                          |
 | Fonts, heading color                        | `app/layout.tsx` (Open_Sans, Work_Sans), `app/globals.css`, `tailwind.config.ts`.                                                                           |
 | Hydration (extension-injected attributes)   | `components/hydration-safe-div.tsx`, `app/_components/home-hero.tsx`, `recent-jobs.tsx`, `companies-worth-knowing.tsx`, `app/page.tsx`, `app/layout.tsx`.   |
-| Next.js Image + Supabase storage            | `next.config.ts` (images.remotePatterns for \*.supabase.co).                                                                                                |
-| Specialization / tech stack / work mode     | `lib/types.ts`, `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/page.tsx`.                                                 |
+| Next.js Image + Supabase storage            | `next.config.ts` (images.remotePatterns for .supabase.co).                                                                                                  |
+| Specialization / tech stack / work mode     | `lib/types.ts`, `lib/jobs.ts`, `app/employer/job-form.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/page.tsx`.                                                |
 | Homepage hero collapse, tech icons          | `app/_components/home-hero.tsx`, `next.config.ts`.                                                                                                          |
+| Pre-application questions (screening)       | Migrations 010–011, `lib/types.ts` (ScreeningQuestion, ScreeningAnswer), `app/employer/job-form.tsx`, `app/jobs/[slug]/apply/*`, `lib/email.ts`.            |
+| Profiles backfill / apply FK fix            | Migration 011, `app/jobs/[slug]/apply/actions.ts` (profile upsert before insert application).                                                               |
+
 
 ---
 
@@ -558,7 +562,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 - **List items one-by-one:** Responsibilities, Requirements, What we offer, Good to have, and Benefits no longer use textareas. Each uses a reusable `ListItemField`: single input + "Add" button (Enter to add), removable list rows, no duplicate items. Data still stored as newline-separated strings; form state is `string[]`, joined with `\n` in `buildForm()`. `parseLines()` helper splits saved values for edit mode.
 - **Form layout:** Description, Work time, and Work mode moved below Benefits. Work time and Work mode use switch-style button groups (two options each) instead of dropdowns. Card header ("New job listing" / "Edit job") and its description removed from the form card.
-- **Required fields:** Job title *, Specialization *, Summary *; Responsibilities *, Requirements *, and What we offer * are required (validation in `handleSubmit`). All form labels use 18px. Helper text under Specialization, Tech stack, Application email/URL, and under section titles removed.
+- **Required fields:** Job title _, Specialization _, Summary _; Responsibilities _, Requirements _, and What we offer _ are required (validation in `handleSubmit`). All form labels use 18px. Helper text under Specialization, Tech stack, Application email/URL, and under section titles removed.
 - **Section dividers:** Thin gradient lines (`from-transparent via-border to-transparent`) between form sections with vertical spacing. Form uses `space-y-0` with separator divs.
 - **Field and button styling:** Inputs use shared `fieldInputClass` (h-11, rounded-lg, border-border/80, shadow-sm, focus ring). Textareas auto-resize (`AutoResizeTextarea`), rounded-lg. List item rows: rounded-lg, bg-muted/30, hover. Specialization and Tech stack option chips: rounded-full, border-2 border-secondary, bg-secondary/50, hover scale. Work time/mode toggles: rounded-lg group, selected = primary, unselected = card with hover. Primary submit button size lg, rounded-lg, shadow; Cancel/Delete same sizing.
 - **Form card:** Uses utility `bg-form-card` (subtle diagonal gradient + light diagonal stripe pattern). Form wrapped in `Card` with `rounded-xl border-border/80 shadow-lg`.
@@ -604,3 +608,26 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 **Notes:** Filter state in URL; Apply pushes `pendingFilters` to URL. Location dropdown only suggests Remote; user can type any location.
 
+---
+
+## Pre-application questions (screening)
+
+**What was done:**
+
+- **Database:** Migration `010_job_screening_questions.sql` – `jobs.screening_questions` (jsonb NOT NULL DEFAULT '[]'), `applications.screening_answers` (jsonb NOT NULL DEFAULT '[]'). Migration `011_profiles_insert_policy_and_backfill.sql` – backfills missing `profiles` rows from `auth.users`; adds RLS policy "Users can insert own profile" so authenticated users can create their own profile row when missing (fixes apply FK error when user has no profile).
+- **Types:** `lib/types.ts` – `ScreeningQuestionType` ('text' | 'yes_no' | 'multiple_choice'), `ScreeningQuestion` (id, prompt, type, options?), `ScreeningAnswer` (question_id, question_prompt, question_type, answer). `Job`, `JobFormData`, and `Application` extended with `screening_questions` / `screening_answers`.
+- **Employer form:** `app/employer/job-form.tsx` – "Pre-application questions" section: Add text question / Add yes/no question / Add multiple-choice question. Each question has prompt input, optional "Answer options" for multiple-choice (add/remove options, min 2). Remove question via X. Type is fixed at creation (no type switcher or type label shown). Validation: non-empty prompt; multiple-choice must have ≥2 options. Questions included in `buildForm()` and persisted via create/update actions.
+- **Job read/write:** `lib/jobs.ts` – all job selects include `screening_questions`. `app/employer/actions.ts` – createJob/updateJob persist `screening_questions` from form.
+- **Apply form:** `app/jobs/[slug]/apply/application-form.tsx` – renders job's screening questions: text → textarea, yes_no → radio (Yes/No), multiple_choice → radio list. All required; answers serialized as JSON in FormData (`screening_answers`). Client-side validation before submit.
+- **Apply action:** `app/jobs/[slug]/apply/actions.ts` – parses and validates screening answers against job's questions; builds `ScreeningAnswer[]`; inserts into `applications.screening_answers`. If current user has no `profiles` row, creates one from auth metadata before insert (avoids FK violation). `lib/email.ts` – `sendApplicationNotification` accepts `screeningAnswers` and appends "Screening answers" Q&A block to employer email.
+
+**Key files:**
+
+- `supabase/migrations/010_job_screening_questions.sql`, `011_profiles_insert_policy_and_backfill.sql`
+- `lib/types.ts` (ScreeningQuestion, ScreeningAnswer, Job/JobFormData/Application)
+- `lib/jobs.ts` (screening_questions in selects), `app/employer/actions.ts` (screening_questions in insert/update)
+- `app/employer/job-form.tsx` (question builder; type fixed at add, no type field shown)
+- `app/jobs/[slug]/apply/application-form.tsx` (dynamic questions + submit), `app/jobs/[slug]/apply/actions.ts` (validate, store, profile upsert)
+- `lib/email.ts` (screeningAnswers in notification)
+
+**Notes:** Run migrations 010 and 011 in Supabase SQL Editor (or via CLI). Employer chooses question type only when adding (text / yes/no / multiple choice); type cannot be changed afterward and is not displayed in the form. Answers delivered to employer via email only in V1; DB stores them for future dashboard use.

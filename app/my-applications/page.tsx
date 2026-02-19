@@ -61,7 +61,7 @@ export default async function MyApplicationsPage() {
                 aria-hidden
               />
               <p className="text-muted-foreground mt-4 mb-4">
-                You haven't applied to any jobs yet.
+                You haven&apos;t applied to any jobs yet.
               </p>
               <Link
                 href="/jobs"

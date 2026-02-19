@@ -9,6 +9,22 @@ export type ProfileRole = "employer" | "job_seeker";
 /** How employer wants to receive applications (DB: application_preference enum). */
 export type ApplicationPreference = "website" | "email";
 
+export type ScreeningQuestionType = "text" | "yes_no" | "multiple_choice";
+
+export interface ScreeningQuestion {
+  id: string;
+  prompt: string;
+  type: ScreeningQuestionType;
+  options?: string[];
+}
+
+export interface ScreeningAnswer {
+  question_id: string;
+  question_prompt: string;
+  question_type: ScreeningQuestionType;
+  answer: string;
+}
+
 /** Full profile row from DB. Used for both job seekers and employers. */
 export interface Profile {
   id: string;
@@ -76,6 +92,7 @@ export interface Job {
   what_we_offer: string | null;
   good_to_have: string | null;
   benefits: string | null;
+  screening_questions: ScreeningQuestion[];
   created_at: string;
   updated_at: string;
   employer?: {
@@ -104,6 +121,7 @@ export interface Application {
   cover_letter_url: string | null;
   status: string;
   applied_at: string;
+  screening_answers: ScreeningAnswer[];
 }
 
 /** Application with nested job (and employer) for list views (e.g. My Applications). */
@@ -145,6 +163,7 @@ export interface JobFormData {
   what_we_offer: string | null;
   good_to_have: string | null;
   benefits: string | null;
+  screening_questions: ScreeningQuestion[];
 }
 
 export interface JobFilters {

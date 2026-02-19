@@ -7,9 +7,13 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
   const supabase = await createClient();
   let query = supabase
     .from("jobs")
-    .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
-    )
+    .select(`
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
+    `)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
@@ -42,12 +46,23 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
     query = query.or(`title.ilike.${q},description.ilike.${q},role.ilike.${q}`);
   }
   if (filters.location?.trim()) {
-    query = query.ilike("location", `%${filters.location.trim()}%`);
+    const loc = filters.location.trim();
+    const locLower = loc.toLowerCase();
+    if (locLower === "remote") {
+      query = query.or("location.ilike.%Remote%,work_type.eq.remote");
+    } else {
+      query = query.ilike("location", `%${loc}%`);
+    }
   }
 
-  const { data, error } = await query;
+  const { data: rows, error } = await query;
   if (error) throw error;
-  return (data ?? []) as Job[];
+  return ((rows ?? []) as unknown[]).map((row) => {
+    const { profiles, ...rest } = row as typeof row & {
+      profiles: Job["employer"] | null;
+    };
+    return { ...rest, employer: profiles ?? undefined } as Job;
+  });
 }
 
 /** Fetch a single job by slug with employer profile. Used for /jobs/[slug]. */
@@ -59,7 +74,7 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
       `
       id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
       salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
-      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
       created_at, updated_at,
       profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
     `,
@@ -85,7 +100,7 @@ export async function getRecentJobs(limit = 6): Promise<Job[]> {
       `
       id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
       salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
-      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
       created_at, updated_at,
       profiles(id, full_name, company_name, company_website, company_logo_url)
     `,
@@ -248,16 +263,25 @@ export async function getActiveJobsByEmployer(
   employerId: string,
 ): Promise<Job[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: rows, error } = await supabase
     .from("jobs")
-    .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
-    )
+    .select(`
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
+    `)
     .eq("employer_id", employerId)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as Job[];
+  return ((rows ?? []) as unknown[]).map((row) => {
+    const { profiles, ...rest } = row as typeof row & {
+      profiles: Job["employer"] | null;
+    };
+    return { ...rest, employer: profiles ?? undefined } as Job;
+  });
 }
 
 /** All jobs for an employer (active + inactive). Used for dashboard. */
@@ -266,7 +290,7 @@ export async function getEmployerJobs(employerId: string): Promise<Job[]> {
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions, created_at, updated_at",
     )
     .eq("employer_id", employerId)
     .order("created_at", { ascending: false });
@@ -280,7 +304,7 @@ export async function getJobByIdForEdit(jobId: string): Promise<Job | null> {
   const { data: row, error } = await supabase
     .from("jobs")
     .select(
-      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, created_at, updated_at",
+      "id, employer_id, title, slug, description, tech_stack, role, work_type, job_type, salary_min, salary_max, location, is_active, application_email, application_url, closed_at, summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions, created_at, updated_at",
     )
     .eq("id", jobId)
     .single();
@@ -315,7 +339,7 @@ export async function getFavoritedJobs(userId: string): Promise<Job[]> {
       jobs (
         id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
         salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
-        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
         created_at, updated_at,
         profiles(id, full_name, company_name, company_website, company_logo_url)
       )
@@ -366,7 +390,7 @@ export async function getApplicationsByApplicant(
       jobs (
         id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
         salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
-        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits,
+        summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
         created_at, updated_at,
         profiles(id, full_name, company_name, company_website, company_logo_url)
       )

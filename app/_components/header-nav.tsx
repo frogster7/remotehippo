@@ -29,6 +29,8 @@ interface HeaderNavProps {
   firstName: string | null;
 }
 
+type NavItem = { href: string; label: string } | { type: "signout"; label: string };
+
 export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -40,11 +42,11 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
     window.location.href = "/";
   }
 
-  const navLinks = [
+  const navLinks: NavItem[] = [
     { href: "/jobs", label: "Jobs" },
     { href: "/blog", label: "Blog" },
     ...(user
-          ? [
+      ? [
           { href: "/saved-jobs", label: "Saved Jobs" },
           { href: "/my-applications", label: "My applications" },
           { href: "/saved-searches", label: "Saved searches" },
@@ -58,7 +60,7 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
           { href: "/login", label: "Log in" },
           { href: "/register", label: "Sign up" },
         ]),
-  ].flat();
+  ];
 
   return (
     <>
@@ -148,7 +150,7 @@ export function HeaderNav({ user, isEmployer, firstName }: HeaderNavProps) {
             <SheetTitle className="sr-only">Menu</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-1 pt-6">
-            {navLinks.map((item, i) =>
+            {navLinks.map((item) =>
               "href" in item ? (
                 <Link
                   key={item.href}

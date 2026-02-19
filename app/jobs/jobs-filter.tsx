@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Code2,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,6 @@ function getActiveFilterLabels(
   return items;
 }
 
-const LOCATION_DROPDOWN_OPTIONS = ["Remote"];
 const SPEC_COLLAPSED = 10;
 const TECH_COLLAPSED = 10;
 
@@ -127,22 +127,34 @@ export function JobsFilter({
   const [specExpanded, setSpecExpanded] = useState(false);
   const [techExpanded, setTechExpanded] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
-  const locationWrapperRef = useRef<HTMLDivElement>(null);
 
+  // Collapse filters on real downward scroll only (not right after manual toggle).
+  const lastScrollYRef = useRef(0);
+  const suppressAutoCollapseUntilRef = useRef(0);
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        locationDropdownOpen &&
-        locationWrapperRef.current &&
-        !locationWrapperRef.current.contains(e.target as Node)
-      ) {
-        setLocationDropdownOpen(false);
+    if (!filtersOpen) return;
+
+    lastScrollYRef.current = window.scrollY;
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+
+      if (Date.now() < suppressAutoCollapseUntilRef.current) {
+        lastScrollYRef.current = scrollY;
+        return;
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [locationDropdownOpen]);
+
+      const delta = scrollY - lastScrollYRef.current;
+      const isScrollingDown = delta > 0;
+      if (isScrollingDown && delta > 8 && scrollY > 80) {
+        setFiltersOpen(false);
+      }
+
+      lastScrollYRef.current = scrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [filtersOpen]);
 
   const visibleSpecs = specExpanded ? roles : roles.slice(0, SPEC_COLLAPSED);
   const visibleTech = techExpanded
@@ -152,6 +164,8 @@ export function JobsFilter({
   // Pending filters: local state for filter panel, applied on "Apply" click
   const [pendingFilters, setPendingFilters] =
     useState<Partial<JobFilters>>(filters);
+  const [searchQuery, setSearchQuery] = useState(filters.q ?? "");
+  const [searchLocation, setSearchLocation] = useState(filters.location ?? "");
   const filtersKey = JSON.stringify({
     q: filters.q,
     location: filters.location,
@@ -165,6 +179,8 @@ export function JobsFilter({
   filtersRef.current = filters;
   useEffect(() => {
     setPendingFilters(filtersRef.current);
+    setSearchQuery(filtersRef.current.q ?? "");
+    setSearchLocation(filtersRef.current.location ?? "");
   }, [filtersKey]); // Sync pending state when URL filters change; ref avoids infinite loop from new object ref each render
 
   const applyPendingFilters = useCallback(() => {
@@ -224,22 +240,22 @@ export function JobsFilter({
   const horizontalBar = (
     <div className="space-y-3">
       {/* Search bar + filters */}
-      <div className="overflow-hidden rounded-xl border border-primary/100 bg-muted/30">
+      <div className="overflow-hidden rounded-xl border border-primary/100 bg-[#fdfdfc]">
         <form
           className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-0 sm:p-4"
           onSubmit={(e) => {
             e.preventDefault();
-            const form = e.currentTarget;
-            const q = (
-              form.elements.namedItem("q") as HTMLInputElement
-            )?.value?.trim();
-            const loc = (
-              form.elements.namedItem("location") as HTMLInputElement
-            )?.value?.trim();
-            updateFilters({
-              q: q || undefined,
-              location: loc || undefined,
-            });
+            const q = searchQuery.trim() || undefined;
+            const loc = searchLocation.trim() || undefined;
+            const merged = {
+              ...pendingFilters,
+              q,
+              location: loc,
+            };
+            const params = filtersToParams(merged);
+            const query = params.toString();
+            router.push(query ? `/jobs?${query}` : "/jobs");
+            setFiltersOpen(false);
           }}
         >
           <div className="relative flex min-h-11 min-w-0 flex-1 sm:flex-[6]">
@@ -251,54 +267,49 @@ export function JobsFilter({
               name="q"
               id="search-h"
               placeholder="Role, company, or keyword"
-              defaultValue={filters.q}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.form?.requestSubmit();
               }}
-              className="h-11 w-full border-0 bg-transparent pl-10 shadow-none focus-visible:ring-0"
+              className="h-11 w-full border-0 bg-transparent pl-10 pr-9 shadow-none focus-visible:ring-0"
             />
+            {searchQuery.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="hover:rounded-full absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <div
-            ref={locationWrapperRef}
-            className="relative flex min-h-11 min-w-0 flex-1 items-center sm:flex-[4] sm:border-l-2 sm:border-border sm:pl-4"
-          >
+          <div className="relative flex min-h-11 min-w-0 flex-1 items-center sm:flex-[4] sm:border-l-2 sm:border-border sm:pl-4">
             <MapPin
               className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 shrink-0 text-muted-foreground sm:left-4"
               aria-hidden
             />
             <Input
-              key={`location-${filters.location ?? ""}`}
               name="location"
               type="text"
-              placeholder="Location"
-              defaultValue={filters.location}
-              onFocus={() => setLocationDropdownOpen(true)}
+              placeholder="Location / Remote"
+              value={searchLocation}
+              onChange={(e) => setSearchLocation(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.form?.requestSubmit();
               }}
-              className="h-11 w-full border-0 bg-transparent pl-9 shadow-none focus-visible:ring-0"
+              className="h-11 w-full border-0 bg-transparent pl-9 pr-9 shadow-none focus-visible:ring-0"
             />
-            {locationDropdownOpen && (
-              <div
-                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-border/80 bg-popover py-1 shadow-lg"
-                role="listbox"
+            {searchLocation.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearchLocation("")}
+                className="hover:rounded-full absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Clear location"
               >
-                {LOCATION_DROPDOWN_OPTIONS.map((loc) => (
-                  <button
-                    key={loc}
-                    type="button"
-                    role="option"
-                    aria-selected={filters.location === loc}
-                    className="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                    onClick={() => {
-                      updateFilters({ location: loc });
-                      setLocationDropdownOpen(false);
-                    }}
-                  >
-                    {loc}
-                  </button>
-                ))}
-              </div>
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
           <Button
@@ -309,7 +320,10 @@ export function JobsFilter({
               "h-11 w-11 shrink-0 rounded-xl transition-colors duration-200 sm:ml-2",
               filtersOpen && "bg-primary/10 border-primary/30",
             )}
-            onClick={() => setFiltersOpen((o) => !o)}
+            onClick={() => {
+              suppressAutoCollapseUntilRef.current = Date.now() + 500;
+              setFiltersOpen((o) => !o);
+            }}
             aria-expanded={filtersOpen}
             aria-label={filtersOpen ? "Hide filters" : "Show filters"}
           >
@@ -476,113 +490,115 @@ export function JobsFilter({
                 </div>
               </div>
 
-              {/* Work time + Work mode – link-style dropdowns */}
-              <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-border/50 pt-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline focus:outline-none focus:underline"
+              {/* Work time + Work mode (left third), Apply (center third), spacer (right third) */}
+              <div className="mt-4 flex flex-nowrap items-center border-t border-border/50 pt-4">
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline focus:outline-none focus:underline"
+                      >
+                        Work time
+                        {((pendingFilters.job_types?.length ?? 0) > 0 ||
+                          pendingFilters.job_type) && (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+                            {pendingFilters.job_types?.length ??
+                              (pendingFilters.job_type ? 1 : 0)}
+                          </span>
+                        )}
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="min-w-[180px] rounded-xl"
                     >
-                      Work time
-                      {((pendingFilters.job_types?.length ?? 0) > 0 ||
-                        pendingFilters.job_type) && (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-                          {pendingFilters.job_types?.length ??
-                            (pendingFilters.job_type ? 1 : 0)}
-                        </span>
-                      )}
-                      <ChevronDown className="h-4 w-4 shrink-0" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    className="min-w-[180px] rounded-xl"
-                  >
-                    {JOB_TYPES.map(({ value, label }) => {
-                      const currentJobTypes = pendingFilters.job_types?.length
-                        ? pendingFilters.job_types
-                        : pendingFilters.job_type
-                          ? [pendingFilters.job_type]
-                          : [];
-                      const checked = currentJobTypes.includes(value);
-                      return (
+                      {JOB_TYPES.map(({ value, label }) => {
+                        const currentJobTypes = pendingFilters.job_types?.length
+                          ? pendingFilters.job_types
+                          : pendingFilters.job_type
+                            ? [pendingFilters.job_type]
+                            : [];
+                        const checked = currentJobTypes.includes(value);
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={value}
+                            checked={checked}
+                            onCheckedChange={(c) => {
+                              const next = c
+                                ? [...new Set([...currentJobTypes, value])]
+                                : currentJobTypes.filter((x) => x !== value);
+                              setPendingFilters((pf) => ({
+                                ...pf,
+                                job_types: next.length ? next : undefined,
+                                job_type:
+                                  next.length === 1 ? next[0] : undefined,
+                              }));
+                            }}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            {label}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline focus:outline-none focus:underline"
+                      >
+                        Work mode
+                        {(pendingFilters.work_types?.length ?? 0) > 0 && (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
+                            {pendingFilters.work_types?.length}
+                          </span>
+                        )}
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="min-w-[180px] rounded-xl"
+                    >
+                      {WORK_TYPES.map(({ value, label }) => (
                         <DropdownMenuCheckboxItem
                           key={value}
-                          checked={checked}
+                          checked={
+                            pendingFilters.work_types?.includes(value) ?? false
+                          }
                           onCheckedChange={(c) => {
                             const next = c
-                              ? [...new Set([...currentJobTypes, value])]
-                              : currentJobTypes.filter((x) => x !== value);
+                              ? [...(pendingFilters.work_types ?? []), value]
+                              : (pendingFilters.work_types ?? []).filter(
+                                  (x) => x !== value,
+                                );
                             setPendingFilters((pf) => ({
                               ...pf,
-                              job_types: next.length ? next : undefined,
-                              job_type: next.length === 1 ? next[0] : undefined,
+                              work_types: next.length ? next : undefined,
                             }));
                           }}
                           onSelect={(e) => e.preventDefault()}
                         >
                           {label}
                         </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline focus:outline-none focus:underline"
-                    >
-                      Work mode
-                      {(pendingFilters.work_types?.length ?? 0) > 0 && (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-primary-foreground">
-                          {pendingFilters.work_types?.length}
-                        </span>
-                      )}
-                      <ChevronDown className="h-4 w-4 shrink-0" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    className="min-w-[180px] rounded-xl"
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex-1 flex justify-center min-w-0 px-2">
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="rounded-xl px-8 font-semibold"
+                    onClick={applyPendingFilters}
                   >
-                    {WORK_TYPES.map(({ value, label }) => (
-                      <DropdownMenuCheckboxItem
-                        key={value}
-                        checked={
-                          pendingFilters.work_types?.includes(value) ?? false
-                        }
-                        onCheckedChange={(c) => {
-                          const next = c
-                            ? [...(pendingFilters.work_types ?? []), value]
-                            : (pendingFilters.work_types ?? []).filter(
-                                (x) => x !== value,
-                              );
-                          setPendingFilters((pf) => ({
-                            ...pf,
-                            work_types: next.length ? next : undefined,
-                          }));
-                        }}
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        {label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Apply button – bottom center */}
-              <div className="mt-6 flex justify-center border-t border-border/50 pt-4">
-                <Button
-                  type="button"
-                  size="lg"
-                  className="rounded-xl px-8 font-semibold"
-                  onClick={applyPendingFilters}
-                >
-                  Apply filters
-                </Button>
+                    Apply filters
+                  </Button>
+                </div>
+                <div className="flex-1 min-w-0" aria-hidden />
               </div>
             </div>
           </div>
@@ -689,20 +705,36 @@ export function JobsFilter({
             >
               Search
             </label>
-            <Input
-              id="search"
-              placeholder="Title, role, keyword…"
-              defaultValue={filters.q}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v !== (filters.q ?? ""))
-                  updateFilters({ q: v || undefined });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-              }}
-              className="rounded-xl"
-            />
+            <div className="relative">
+              <Input
+                id="search"
+                placeholder="Title, role, keyword…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onBlur={() => {
+                  const v = searchQuery.trim();
+                  if (v !== (filters.q ?? ""))
+                    updateFilters({ q: v || undefined });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                className="rounded-xl pr-9"
+              />
+              {searchQuery.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    updateFilters({ q: undefined });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <label
@@ -711,20 +743,36 @@ export function JobsFilter({
             >
               Location
             </label>
-            <Input
-              id="location"
-              placeholder="City, country…"
-              defaultValue={filters.location}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v !== (filters.location ?? ""))
-                  updateFilters({ location: v || undefined });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-              }}
-              className="rounded-xl"
-            />
+            <div className="relative">
+              <Input
+                id="location"
+                placeholder="e.g. Remote, city…"
+                value={searchLocation}
+                onChange={(e) => setSearchLocation(e.target.value)}
+                onBlur={() => {
+                  const v = searchLocation.trim();
+                  if (v !== (filters.location ?? ""))
+                    updateFilters({ location: v || undefined });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                className="rounded-xl pr-9"
+              />
+              {searchLocation.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchLocation("");
+                    updateFilters({ location: undefined });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label="Clear location"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">

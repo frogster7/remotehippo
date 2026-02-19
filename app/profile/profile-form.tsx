@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -42,14 +43,6 @@ import { FileUp, Trash2, Building2, User } from "lucide-react";
 const CV_ACCEPT = ".pdf,.doc,.docx";
 const LOGO_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
-function getCvFileName(path: string | null): string {
-  if (!path) return "";
-  const parts = path.split("/");
-  const full = parts[parts.length - 1] ?? "";
-  const withoutTimestamp = full.replace(/^\d+-/, "");
-  return decodeURIComponent(withoutTimestamp) || "CV";
-}
-
 export type CvWithUrl = {
   id: string;
   storage_path: string;
@@ -72,7 +65,7 @@ export function ProfileForm({
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [lastName, setLastName] = useState(profile.last_name ?? "");
   const [phoneNumber, setPhoneNumber] = useState(profile.phone_number ?? "");
-  const [role, setRole] = useState<"employer" | "job_seeker">(profile.role);
+  const role = profile.role;
   const [companyName, setCompanyName] = useState(profile.company_name ?? "");
   const [companyWebsite, setCompanyWebsite] = useState(
     profile.company_website ?? ""
@@ -428,10 +421,13 @@ export function ProfileForm({
           <CardContent className="space-y-4">
             {hasLogo ? (
               <div className="flex flex-wrap items-center gap-4">
-                <img
+                <Image
                   src={profile.company_logo_url!}
                   alt="Company logo"
+                  width={80}
+                  height={80}
                   className="h-20 w-20 object-contain rounded border bg-muted"
+                  unoptimized
                 />
                 <div className="flex gap-2">
                   <input

@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import type { Job } from "@/lib/types";
+import type { Job, ScreeningQuestion } from "@/lib/types";
 import { CV_ALLOWED_EXTENSIONS, isAllowedCvFileName } from "@/lib/storage";
 
 export type SavedCvOption = {
@@ -34,8 +34,6 @@ type ApplicationFormProps = {
   prefilledEmail: string;
   prefilledPhone: string;
   hasCv: boolean;
-  cvDownloadUrl: string | null;
-  cvFileName: string;
   savedCvs: SavedCvOption[];
 };
 
@@ -49,11 +47,10 @@ export function ApplicationForm({
   prefilledEmail,
   prefilledPhone,
   hasCv,
-  cvDownloadUrl,
-  cvFileName,
   savedCvs,
 }: ApplicationFormProps) {
   const router = useRouter();
+  const screeningQuestions = job.screening_questions ?? [];
   const cvInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(prefilledName);
   const [lastName, setLastName] = useState(prefilledLastName);
@@ -69,6 +66,13 @@ export function ApplicationForm({
   const [success, setSuccess] = useState(false);
   const [emailSent, setEmailSent] = useState(true);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [screeningAnswers, setScreeningAnswers] = useState<
+    Record<string, string>
+  >(() =>
+    Object.fromEntries(
+      screeningQuestions.map((question) => [question.id, ""]),
+    ),
+  );
 
   const hasCvSource = hasCv || attachFile !== null;
 
@@ -76,6 +80,34 @@ export function ApplicationForm({
     e.preventDefault();
     setError(null);
     setLoading(true);
+    const serializedScreeningAnswers = screeningQuestions.map((question) => {
+      const rawAnswer = screeningAnswers[question.id] ?? "";
+      const answer = rawAnswer.trim();
+      return { question_id: question.id, answer };
+    });
+    for (const question of screeningQuestions) {
+      const answer = (screeningAnswers[question.id] ?? "").trim();
+      if (!answer) {
+        setError("Please answer all pre-application questions.");
+        setLoading(false);
+        return;
+      }
+      if (question.type === "yes_no" && answer !== "yes" && answer !== "no") {
+        setError(`Invalid answer for "${question.prompt}".`);
+        setLoading(false);
+        return;
+      }
+      if (question.type === "multiple_choice") {
+        const validOptions = (question.options ?? []).map((option) =>
+          option.trim(),
+        );
+        if (!validOptions.includes(answer)) {
+          setError(`Invalid answer for "${question.prompt}".`);
+          setLoading(false);
+          return;
+        }
+      }
+    }
     const formData = new FormData();
     formData.set("applicant_name", name.trim());
     formData.set("applicant_last_name", lastName.trim());
@@ -87,6 +119,10 @@ export function ApplicationForm({
     } else if (selectedCvPath) {
       formData.set("cv_path", selectedCvPath);
     }
+    formData.set(
+      "screening_answers",
+      JSON.stringify(serializedScreeningAnswers),
+    );
     const result = await submitApplication(slug, formData);
     setLoading(false);
     if (result.error) {
@@ -113,6 +149,79 @@ export function ApplicationForm({
 
   const companyName =
     job.employer?.company_name ?? job.employer?.full_name ?? "Company";
+
+  const updateScreeningAnswer = (questionId: string, value: string) => {
+    setScreeningAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
+
+  const renderScreeningQuestionInput = (question: ScreeningQuestion) => {
+    const value = screeningAnswers[question.id] ?? "";
+    if (question.type === "yes_no") {
+      return (
+        <div className="flex flex-wrap gap-3">
+          {[
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" },
+          ].map((option) => (
+            <label
+              key={`${question.id}_${option.value}`}
+              className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
+            >
+              <input
+                type="radio"
+                name={`screening_${question.id}`}
+                value={option.value}
+                checked={value === option.value}
+                onChange={(e) =>
+                  updateScreeningAnswer(question.id, e.target.value)
+                }
+                disabled={loading}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      );
+    }
+
+    if (question.type === "multiple_choice") {
+      return (
+        <div className="space-y-2">
+          {(question.options ?? []).map((option) => {
+            const normalizedOption = option.trim();
+            return (
+              <label
+                key={`${question.id}_${normalizedOption}`}
+                className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
+              >
+                <input
+                  type="radio"
+                  name={`screening_${question.id}`}
+                  value={normalizedOption}
+                  checked={value === normalizedOption}
+                  onChange={(e) =>
+                    updateScreeningAnswer(question.id, e.target.value)
+                  }
+                  disabled={loading}
+                />
+                {option}
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <Textarea
+        value={value}
+        onChange={(e) => updateScreeningAnswer(question.id, e.target.value)}
+        placeholder="Type your answer"
+        rows={3}
+        disabled={loading}
+      />
+    );
+  };
 
   if (success) {
     return (
@@ -308,6 +417,21 @@ export function ApplicationForm({
               className="resize-none"
             />
           </div>
+          {screeningQuestions.length > 0 && (
+            <div className="space-y-3 rounded-lg border border-border/70 bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                Pre-application questions
+              </p>
+              {screeningQuestions.map((question, index) => (
+                <div key={question.id} className="space-y-2">
+                  <Label htmlFor={`screening_${question.id}`}>
+                    {index + 1}. {question.prompt}
+                  </Label>
+                  {renderScreeningQuestionInput(question)}
+                </div>
+              ))}
+            </div>
+          )}
           <Button type="submit" disabled={loading || !hasCvSource}>
             {loading ? "Sending…" : "Submit application"}
           </Button>

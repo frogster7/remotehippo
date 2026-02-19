@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, ChevronDown, ChevronUp, Code2 } from "lucide-react";
+import { Search, MapPin, ChevronDown, ChevronUp, Code2, X } from "lucide-react";
 import Image from "next/image";
 import { getTechIconUrl } from "@/lib/tech-icons";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,6 @@ import { HydrationSafeDiv } from "@/components/hydration-safe-div";
 import { cn } from "@/lib/utils";
 import type { WorkType, JobType } from "@/lib/types";
 import { JOB_TYPES, WORK_TYPES } from "@/lib/types";
-
-const LOCATION_OPTIONS = ["Remote"];
 
 const HOME_TECH_ORDER = [
   "JavaScript",
@@ -45,11 +43,10 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
   const [selectedTech, setSelectedTech] = useState<string[]>([]);
   const [selectedWorkTypes, setSelectedWorkTypes] = useState<WorkType[]>([]);
   const [selectedJobTypes, setSelectedJobTypes] = useState<JobType[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [locationInput, setLocationInput] = useState<string>("");
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [specializationsExpanded, setSpecializationsExpanded] = useState(true);
   const [techExpanded, setTechExpanded] = useState(false);
-  const locationWrapperRef = useRef<HTMLDivElement>(null);
 
   const toggleRole = (r: string) => {
     setSelectedRoles((prev) =>
@@ -72,24 +69,9 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
     );
   };
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        locationDropdownOpen &&
-        locationWrapperRef.current &&
-        !locationWrapperRef.current.contains(e.target as Node)
-      ) {
-        setLocationDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [locationDropdownOpen]);
-
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const q = (form.elements.namedItem("q") as HTMLInputElement)?.value?.trim();
+    const q = searchQuery.trim();
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (locationInput.trim()) params.set("location", locationInput.trim());
@@ -131,11 +113,10 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
   const visibleTech = techExpanded ? allTech : allTech.slice(0, TECH_COLLAPSED);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-muted via-muted/70 to-background">
+    <section className="relative overflow-hidden bg-gradient-to-br from-muted via-primary/[0.08] to-background">
       <div className="absolute inset-0 -z-10" aria-hidden>
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.14] via-primary/[0.04] to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/[0.06] from-0% via-transparent via-50% to-primary/[0.08] to-100%" />
-        <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-muted/90 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,hsl(var(--primary)/0.18),transparent_50%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-muted/80 to-transparent" />
       </div>
 
       <HydrationSafeDiv className="container mx-auto px-4 pt-12 pb-16 md:pt-16 md:pb-20 lg:pt-20 lg:pb-24">
@@ -166,49 +147,43 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
                 <Input
                   name="q"
                   placeholder="Role, company, or keyword"
-                  className="h-11 w-full border-0 bg-transparent pl-10 shadow-none focus-visible:ring-0"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-11 w-full border-0 bg-transparent pl-10 pr-9 shadow-none focus-visible:ring-0"
                 />
-              </div>
-              {/* Location: single input + dropdown (same look as keyword input), centered in row */}
-              <div
-                ref={locationWrapperRef}
-                className="relative flex min-h-11 min-w-0 flex-1 items-center sm:flex-[4] sm:border-l-2 sm:border-border sm:pl-4"
-              >
-                <div className="relative flex w-full items-center">
-                  <MapPin
-                    className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Location"
-                    value={locationInput}
-                    onChange={(e) => setLocationInput(e.target.value)}
-                    onFocus={() => setLocationDropdownOpen(true)}
-                    className="h-11 w-full border-0 bg-transparent pl-9 pr-3 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                {locationDropdownOpen && (
-                  <div
-                    className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-xl border border-border/80 bg-popover py-1 shadow-lg"
-                    role="listbox"
+                {searchQuery.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="hover:rounded-full absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Clear search"
                   >
-                    {LOCATION_OPTIONS.map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        role="option"
-                        aria-selected={locationInput === loc}
-                        className="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                        onClick={() => {
-                          setLocationInput(loc);
-                          setLocationDropdownOpen(false);
-                        }}
-                      >
-                        {loc}
-                      </button>
-                    ))}
-                  </div>
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              {/* Location input */}
+              <div className="relative flex min-h-11 min-w-0 flex-1 items-center sm:flex-[4] sm:border-l-2 sm:border-border sm:pl-4">
+                <MapPin
+                  className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 shrink-0 text-muted-foreground sm:left-4"
+                  aria-hidden
+                />
+                <Input
+                  type="text"
+                  placeholder="Location / Remote"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  className="h-11 w-full border-0 bg-transparent pl-9 pr-9 shadow-none focus-visible:ring-0"
+                />
+                {locationInput.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setLocationInput("")}
+                    className="hover:rounded-full absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Clear location"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
               <Button
@@ -222,7 +197,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
             </HydrationSafeDiv>
           </form>
 
-          <HydrationSafeDiv className="mt-6 rounded-2xl border border-primary/100 bg-card/80 p-5 shadow-sm backdrop-blur sm:p-6">
+          <HydrationSafeDiv className="mt-6 rounded-2xl border border-primary/100 bg-[#fdfdfc] p-5 shadow-sm backdrop-blur sm:p-6">
             <div className="space-y-5">
               <div>
                 <p className="text-sm font-medium text-foreground">

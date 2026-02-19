@@ -62,9 +62,6 @@ export default async function ApplyPage({ params }: Props) {
       })
     )) ?? [];
 
-  const firstCv = savedCvs[0] ?? null;
-  const cvDownloadUrl = firstCv?.downloadUrl ?? null;
-  const cvFileName = firstCv?.fileName ?? "";
   const hasCv = savedCvs.length > 0;
 
   const prefilledName = profile?.full_name?.trim() ?? "";
@@ -99,8 +96,6 @@ export default async function ApplyPage({ params }: Props) {
           prefilledEmail={prefilledEmail}
           prefilledPhone={prefilledPhone}
           hasCv={hasCv}
-          cvDownloadUrl={cvDownloadUrl}
-          cvFileName={cvFileName}
           savedCvs={savedCvs}
         />
       </div>

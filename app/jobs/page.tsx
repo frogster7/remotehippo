@@ -100,7 +100,7 @@ export default async function JobsPage({
         </section>
 
         {/* Sticky search + filters – sticks at very top when scrolled */}
-        <div className="sticky top-0 z-20 -mt-1 bg-white pt-3 pb-3">
+        <div className="sticky top-0 z-20 -mt-1 bg-white pt-3">
           <Suspense
             fallback={
               <div className="h-24 animate-pulse rounded-2xl border border-border/80 bg-card" />

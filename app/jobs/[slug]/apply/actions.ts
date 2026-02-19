@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getJobBySlug } from "@/lib/jobs";
 import { createSignedCvUrl, uploadCv } from "@/lib/storage";
 import { sendApplicationNotification } from "@/lib/email";
+import type { ScreeningAnswer } from "@/lib/types";
 
 export type SubmitApplicationResult = {
   error: string | null;
@@ -24,6 +25,36 @@ export async function submitApplication(
     redirect(`/login?next=/jobs/${slug}/apply`);
   }
 
+  // Some legacy/dev users may exist in auth without a profiles row.
+  // Ensure the row exists before inserting application FK (applicant_id -> profiles.id).
+  const { data: existingProfile, error: profileLookupError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileLookupError) {
+    return { error: profileLookupError.message };
+  }
+  if (!existingProfile) {
+    const roleMeta = user.user_metadata?.role;
+    const role = roleMeta === "employer" ? "employer" : "job_seeker";
+    const fullName =
+      (typeof user.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : "") || "";
+    const { error: profileInsertError } = await supabase.from("profiles").insert({
+      id: user.id,
+      role,
+      full_name: fullName,
+    });
+    if (profileInsertError) {
+      return {
+        error:
+          "Your profile is not initialized yet. Please open Profile once, then try applying again.",
+      };
+    }
+  }
+
   const job = await getJobBySlug(slug);
   if (!job || job.closed_at) {
     return { error: "This job is no longer accepting applications." };
@@ -37,8 +68,59 @@ export async function submitApplication(
   const email = String(formData.get("applicant_email") ?? "").trim();
   const phone = String(formData.get("applicant_phone") ?? "").trim();
   const coverLetterText = String(formData.get("cover_letter_text") ?? "").trim() || null;
+  let submittedScreeningAnswers: { question_id: string; answer: string }[] = [];
+  const rawScreeningAnswers = String(formData.get("screening_answers") ?? "[]");
+  try {
+    const parsed = JSON.parse(rawScreeningAnswers);
+    if (Array.isArray(parsed)) {
+      submittedScreeningAnswers = parsed
+        .filter(
+          (item) =>
+            item &&
+            typeof item === "object" &&
+            typeof item.question_id === "string" &&
+            typeof item.answer === "string",
+        )
+        .map((item) => ({
+          question_id: item.question_id,
+          answer: item.answer,
+        }));
+    }
+  } catch {
+    return { error: "Invalid screening answers payload." };
+  }
   if (!name || !lastName || !email) {
     return { error: "Name, last name, and email are required." };
+  }
+
+  const normalizedScreeningAnswers: ScreeningAnswer[] = [];
+  for (const question of job.screening_questions ?? []) {
+    const prompt = question.prompt?.trim();
+    if (!prompt) continue;
+    const matched = submittedScreeningAnswers.find(
+      (answer) => answer.question_id === question.id,
+    );
+    const answer = matched?.answer?.trim() ?? "";
+    if (!answer) {
+      return { error: `Please answer: ${prompt}` };
+    }
+    if (question.type === "yes_no" && answer !== "yes" && answer !== "no") {
+      return { error: `Invalid answer for: ${prompt}` };
+    }
+    if (question.type === "multiple_choice") {
+      const options = (question.options ?? [])
+        .map((option) => option.trim())
+        .filter(Boolean);
+      if (!options.includes(answer)) {
+        return { error: `Invalid answer for: ${prompt}` };
+      }
+    }
+    normalizedScreeningAnswers.push({
+      question_id: question.id,
+      question_prompt: prompt,
+      question_type: question.type,
+      answer,
+    });
   }
 
   const cvFile = formData.get("cv_file") as File | null;
@@ -103,6 +185,7 @@ export async function submitApplication(
     applicant_phone: phone || "",
     cv_url: cvPath,
     cover_letter_text: coverLetterText,
+    screening_answers: normalizedScreeningAnswers,
     status: "pending",
   });
   if (insertError) {
@@ -120,6 +203,7 @@ export async function submitApplication(
     applicantPhone: phone,
     coverLetter: coverLetterText,
     cvDownloadUrl: cvDownloadUrl || null,
+    screeningAnswers: normalizedScreeningAnswers,
   });
   if (emailResult.error) {
     console.error("[apply] Failed to send notification email:", emailResult.error);

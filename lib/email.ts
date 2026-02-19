@@ -13,6 +13,10 @@ export type ApplicationEmailParams = {
   applicantPhone: string;
   coverLetter: string | null;
   cvDownloadUrl: string | null;
+  screeningAnswers: {
+    question_prompt: string;
+    answer: string;
+  }[];
 };
 
 export type SendApplicationResult =
@@ -41,6 +45,7 @@ export async function sendApplicationNotification(
     applicantPhone,
     coverLetter,
     cvDownloadUrl,
+    screeningAnswers,
   } = params;
 
   const lines: string[] = [
@@ -55,6 +60,14 @@ export async function sendApplicationNotification(
   ];
   if (coverLetter?.trim()) {
     lines.push("Cover letter:", coverLetter.trim(), "");
+  }
+  if (screeningAnswers.length > 0) {
+    lines.push("Screening answers:");
+    screeningAnswers.forEach((item, index) => {
+      lines.push(`${index + 1}. ${item.question_prompt}`);
+      lines.push(`Answer: ${item.answer}`);
+    });
+    lines.push("");
   }
   if (cvDownloadUrl) {
     lines.push(`CV (download link, expires in 24h): ${cvDownloadUrl}`);

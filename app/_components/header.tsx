@@ -19,7 +19,7 @@ export async function Header() {
   const firstName = profile?.full_name?.trim().split(/\s+/)[0] ?? null;
 
   return (
-    <header className="border-b border-primary/100">
+    <header className="border-b border-primary/100 bg-[#fdfdfc]">
       <div
         className="mx-auto max-w-[1200px] h-14 flex items-center justify-between"
         suppressHydrationWarning

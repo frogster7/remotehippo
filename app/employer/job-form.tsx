@@ -14,6 +14,7 @@ import {
   TECH_STACK_OPTIONS,
   type Job,
   type JobFormData,
+  type ScreeningQuestion,
 } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
@@ -34,10 +35,14 @@ function parseLines(s: string | null | undefined): string[] {
     .filter(Boolean);
 }
 
+function createQuestionId() {
+  return `q_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+}
+
 const fieldInputClass =
-  "h-11 rounded-lg border-border/80 bg-background px-3.5 text-base shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+  "h-11 rounded-lg border-primary/30 bg-background px-3.5 text-base shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const textareaBaseClass =
-  "flex w-full rounded-lg border border-border/80 bg-background px-3.5 py-3 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden transition-shadow";
+  "flex w-full rounded-lg border border-primary/30 bg-background px-3.5 py-3 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden transition-shadow";
 
 function AutoResizeTextarea({
   value,
@@ -121,7 +126,10 @@ function ListItemField({
         <Label htmlFor={id}>
           {label}
           {optional && (
-            <span className="text-muted-foreground font-normal"> (optional)</span>
+            <span className="text-muted-foreground font-normal">
+              {" "}
+              (optional)
+            </span>
           )}
         </Label>
       ) : null}
@@ -230,8 +238,8 @@ export function JobForm({
   );
   const [isActive, setIsActive] = useState(job?.is_active ?? true);
   const [summary, setSummary] = useState(job?.summary ?? "");
-  const [responsibilitiesArr, setResponsibilitiesArr] = useState<string[]>(
-    () => parseLines(job?.responsibilities),
+  const [responsibilitiesArr, setResponsibilitiesArr] = useState<string[]>(() =>
+    parseLines(job?.responsibilities),
   );
   const [requirementsArr, setRequirementsArr] = useState<string[]>(() =>
     parseLines(job?.requirements),
@@ -244,6 +252,19 @@ export function JobForm({
   );
   const [benefitsArr, setBenefitsArr] = useState<string[]>(() =>
     parseLines(job?.benefits),
+  );
+  const [screeningQuestions, setScreeningQuestions] = useState<
+    ScreeningQuestion[]
+  >(() =>
+    (job?.screening_questions ?? []).map((question, idx) => ({
+      id: question.id || `q_${idx + 1}`,
+      prompt: question.prompt ?? "",
+      type: question.type ?? "text",
+      options:
+        question.type === "multiple_choice"
+          ? (question.options ?? []).filter(Boolean)
+          : undefined,
+    })),
   );
 
   function buildForm(): JobFormData {
@@ -264,16 +285,28 @@ export function JobForm({
       application_url: applicationUrl.trim() || null,
       summary: summary.trim() || null,
       responsibilities:
-        responsibilitiesArr.length > 0
-          ? responsibilitiesArr.join("\n")
-          : null,
+        responsibilitiesArr.length > 0 ? responsibilitiesArr.join("\n") : null,
       requirements:
         requirementsArr.length > 0 ? requirementsArr.join("\n") : null,
       what_we_offer:
         whatWeOfferArr.length > 0 ? whatWeOfferArr.join("\n") : null,
-      good_to_have:
-        goodToHaveArr.length > 0 ? goodToHaveArr.join("\n") : null,
+      good_to_have: goodToHaveArr.length > 0 ? goodToHaveArr.join("\n") : null,
       benefits: benefitsArr.length > 0 ? benefitsArr.join("\n") : null,
+      screening_questions: screeningQuestions
+        .map((question) => {
+          const prompt = question.prompt.trim();
+          const options =
+            question.type === "multiple_choice"
+              ? (question.options ?? []).map((opt) => opt.trim()).filter(Boolean)
+              : undefined;
+          return {
+            id: question.id || createQuestionId(),
+            prompt,
+            type: question.type,
+            options,
+          } as ScreeningQuestion;
+        })
+        .filter((question) => question.prompt.length > 0),
     };
   }
 
@@ -295,6 +328,23 @@ export function JobForm({
     if (whatWeOfferArr.length === 0) {
       setError("Please add at least one item in What we offer.");
       return;
+    }
+    for (const [index, question] of screeningQuestions.entries()) {
+      if (!question.prompt.trim()) {
+        setError(`Screening question ${index + 1} cannot be empty.`);
+        return;
+      }
+      if (question.type === "multiple_choice") {
+        const options = (question.options ?? [])
+          .map((option) => option.trim())
+          .filter(Boolean);
+        if (options.length < 2) {
+          setError(
+            `Screening question ${index + 1} needs at least 2 options.`,
+          );
+          return;
+        }
+      }
     }
     setLoading(true);
     const form = buildForm();
@@ -329,7 +379,7 @@ export function JobForm({
   );
 
   return (
-    <Card className="rounded-xl border-border/80 shadow-lg bg-form-card">
+    <Card className="rounded-xl border-primary/100 shadow-lg bg-form-card">
       <CardContent className="p-6 sm:p-8 pt-6">
         <form onSubmit={handleSubmit} className="space-y-0">
           {error && (
@@ -338,7 +388,9 @@ export function JobForm({
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-[18px]">Job title *</Label>
+            <Label htmlFor="title" className="text-[18px]">
+              Job title *
+            </Label>
             <Input
               id="title"
               value={title}
@@ -591,6 +643,187 @@ export function JobForm({
           <div className="py-6" role="separator">
             {sectionDivider}
           </div>
+          <div className="space-y-3">
+            <h3 className="text-[18px] font-medium">Pre-application questions</h3>
+            <p className="text-sm text-muted-foreground">
+              Applicants must answer all questions before they can submit.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setScreeningQuestions((prev) => [
+                    ...prev,
+                    { id: createQuestionId(), prompt: "", type: "text" },
+                  ])
+                }
+                disabled={loading}
+              >
+                Add text question
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setScreeningQuestions((prev) => [
+                    ...prev,
+                    { id: createQuestionId(), prompt: "", type: "yes_no" },
+                  ])
+                }
+                disabled={loading}
+              >
+                Add yes/no question
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setScreeningQuestions((prev) => [
+                    ...prev,
+                    {
+                      id: createQuestionId(),
+                      prompt: "",
+                      type: "multiple_choice",
+                      options: ["", ""],
+                    },
+                  ])
+                }
+                disabled={loading}
+              >
+                Add multiple-choice question
+              </Button>
+            </div>
+
+            {screeningQuestions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No custom questions added yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {screeningQuestions.map((question, questionIdx) => (
+                  <div
+                    key={question.id}
+                    className="rounded-lg border border-primary/20 bg-muted/20 p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground">
+                        Question {questionIdx + 1}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setScreeningQuestions((prev) =>
+                            prev.filter((q) => q.id !== question.id),
+                          )
+                        }
+                        className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        disabled={loading}
+                        aria-label={`Remove question ${questionIdx + 1}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`screening_prompt_${question.id}`}>
+                        Prompt *
+                      </Label>
+                      <Input
+                        id={`screening_prompt_${question.id}`}
+                        value={question.prompt}
+                        onChange={(e) =>
+                          setScreeningQuestions((prev) =>
+                            prev.map((q) =>
+                              q.id === question.id
+                                ? { ...q, prompt: e.target.value }
+                                : q,
+                            ),
+                          )
+                        }
+                        placeholder="Type the question applicant must answer"
+                        disabled={loading}
+                        className={fieldInputClass}
+                      />
+                    </div>
+                    {question.type === "multiple_choice" && (
+                      <div className="space-y-2">
+                        <Label>Answer options *</Label>
+                        <div className="space-y-2">
+                          {(question.options ?? []).map((option, optionIdx) => (
+                            <div
+                              key={`${question.id}_opt_${optionIdx}`}
+                              className="flex items-center gap-2"
+                            >
+                              <Input
+                                value={option}
+                                onChange={(e) =>
+                                  setScreeningQuestions((prev) =>
+                                    prev.map((q) => {
+                                      if (q.id !== question.id) return q;
+                                      const nextOptions = [...(q.options ?? [])];
+                                      nextOptions[optionIdx] = e.target.value;
+                                      return { ...q, options: nextOptions };
+                                    }),
+                                  )
+                                }
+                                placeholder={`Option ${optionIdx + 1}`}
+                                disabled={loading}
+                                className={fieldInputClass}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setScreeningQuestions((prev) =>
+                                    prev.map((q) => {
+                                      if (q.id !== question.id) return q;
+                                      const nextOptions = [...(q.options ?? [])];
+                                      nextOptions.splice(optionIdx, 1);
+                                      return {
+                                        ...q,
+                                        options:
+                                          nextOptions.length > 0
+                                            ? nextOptions
+                                            : [""],
+                                      };
+                                    }),
+                                  )
+                                }
+                                className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                disabled={loading || (question.options?.length ?? 0) <= 2}
+                                aria-label={`Remove option ${optionIdx + 1}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setScreeningQuestions((prev) =>
+                              prev.map((q) =>
+                                q.id === question.id
+                                  ? { ...q, options: [...(q.options ?? []), ""] }
+                                  : q,
+                              ),
+                            )
+                          }
+                          disabled={loading}
+                        >
+                          Add option
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="py-6" role="separator">
+            {sectionDivider}
+          </div>
           <div className="space-y-2">
             <h3 className="text-[18px] font-medium">Description</h3>
             <AutoResizeTextarea
@@ -608,12 +841,14 @@ export function JobForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[18px]">Work time</Label>
-              <div className="flex rounded-lg border border-border/80 overflow-hidden shadow-sm">
+              <div className="flex rounded-lg border border-primary/30 overflow-hidden shadow-sm">
                 {JOB_TYPES.map((j) => (
                   <button
                     key={j.value}
                     type="button"
-                    onClick={() => setJobType(j.value as JobFormData["job_type"])}
+                    onClick={() =>
+                      setJobType(j.value as JobFormData["job_type"])
+                    }
                     disabled={loading}
                     className={`flex-1 px-4 py-2.5 text-sm font-medium transition-all ${
                       jobType === j.value
@@ -628,12 +863,14 @@ export function JobForm({
             </div>
             <div className="space-y-2">
               <Label className="text-[18px]">Work mode</Label>
-              <div className="flex rounded-lg border border-border/80 overflow-hidden shadow-sm">
+              <div className="flex rounded-lg border border-primary/30 overflow-hidden shadow-sm">
                 {WORK_TYPES.map((w) => (
                   <button
                     key={w.value}
                     type="button"
-                    onClick={() => setWorkType(w.value as JobFormData["work_type"])}
+                    onClick={() =>
+                      setWorkType(w.value as JobFormData["work_type"])
+                    }
                     disabled={loading}
                     className={`flex-1 px-4 py-2.5 text-sm font-medium transition-all ${
                       workType === w.value
@@ -652,7 +889,9 @@ export function JobForm({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="salary_min" className="text-[18px]">Salary min (e.g. 60000)</Label>
+              <Label htmlFor="salary_min" className="text-[18px]">
+                Salary min (e.g. 60000)
+              </Label>
               <Input
                 id="salary_min"
                 type="number"
@@ -665,7 +904,9 @@ export function JobForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="salary_max" className="text-[18px]">Salary max (e.g. 90000)</Label>
+              <Label htmlFor="salary_max" className="text-[18px]">
+                Salary max (e.g. 90000)
+              </Label>
               <Input
                 id="salary_max"
                 type="number"
@@ -682,22 +923,33 @@ export function JobForm({
             {sectionDivider}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-[18px]">Location</Label>
+            <Label htmlFor="location" className="text-[18px]">
+              Location
+            </Label>
             <Input
               id="location"
+              list="location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Europe, or City (for hybrid)"
+              placeholder="e.g. Remote, Europe, or City (for hybrid)"
               disabled={loading}
               className={fieldInputClass}
             />
+            <datalist id="location-options">
+              <option value="Remote" />
+              <option value="Hybrid" />
+              <option value="Europe" />
+              <option value="North America" />
+            </datalist>
           </div>
           <div className="py-6" role="separator">
             {sectionDivider}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="application_email" className="text-[18px]">Application email</Label>
+              <Label htmlFor="application_email" className="text-[18px]">
+                Application email
+              </Label>
               <Input
                 id="application_email"
                 type="email"
@@ -709,7 +961,9 @@ export function JobForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="application_url" className="text-[18px]">Application URL</Label>
+              <Label htmlFor="application_url" className="text-[18px]">
+                Application URL
+              </Label>
               <Input
                 id="application_url"
                 type="url"
@@ -732,7 +986,10 @@ export function JobForm({
                 onCheckedChange={(c) => setIsActive(!!c)}
                 disabled={loading}
               />
-              <Label htmlFor="is_active" className="text-[18px] font-normal cursor-pointer">
+              <Label
+                htmlFor="is_active"
+                className="text-[18px] font-normal cursor-pointer"
+              >
                 Active (visible on job board)
               </Label>
             </div>
