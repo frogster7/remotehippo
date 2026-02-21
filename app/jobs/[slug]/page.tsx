@@ -1,13 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Clock, MapPin } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getJobBySlug, getSimilarJobs, isJobFavorited } from "@/lib/jobs";
 import { getJobApplyProps } from "@/lib/job-apply";
+import { recordJobView } from "@/lib/job-analytics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/app/favorites/favorite-button";
 import { JobApplyCard } from "./job-apply-card";
+import { BannerSlider } from "./banner-slider";
 import { ScrollToTopOnMount } from "./scroll-to-top-on-mount";
 import { createClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site";
@@ -85,10 +87,28 @@ export default async function JobDetailPage({ params }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [isFavorited, similarJobs] = await Promise.all([
+  const profile = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+        .then((r) => r.data)
+    : null;
+  const isEmployer = profile?.role === "employer";
+
+  const [isFavorited, similarJobs, , { data: bannersData }] = await Promise.all([
     isJobFavorited(job.id, user?.id),
     getSimilarJobs(job, 3),
+    recordJobView(job.id),
+    supabase
+      .from("company_banners")
+      .select("id, url")
+      .eq("employer_id", job.employer_id)
+      .order("display_order", { ascending: true }),
   ]);
+
+  const banners = (bannersData ?? []).map((b) => ({ id: b.id, url: b.url }));
 
   const companyName =
     job.employer?.company_name ?? job.employer?.full_name ?? "Company";
@@ -100,20 +120,19 @@ export default async function JobDetailPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       <ScrollToTopOnMount />
-      <div className="mx-auto w-full max-w-[1200px] py-6 lg:py-10">
-        <Link
-          href="/jobs"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to jobs
-        </Link>
+      <div className="mt-5 flex flex-col gap-5">
+        {banners.length > 0 && (
+          <div className="w-full">
+            <BannerSlider banners={banners} />
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-start lg:gap-8">
+        <div className="mx-auto w-full max-w-[1200px] pb-6 lg:pb-10">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-start lg:gap-8">
           {/* Main content - grows to fill container up to 1200px total */}
           <article className="min-w-0 space-y-5 lg:col-span-2">
-            {/* Hero card: title, position, company, job type & meta */}
-            <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+            {/* Hero card: title, position, job type & meta */}
+            <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex flex-col gap-2">
@@ -138,6 +157,7 @@ export default async function JobDetailPage({ params }: Props) {
                     jobId={job.id}
                     initialIsFavorited={isFavorited}
                     isLoggedIn={!!user}
+                    disabled={isEmployer}
                     variant="icon"
                   />
                 </div>
@@ -158,7 +178,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Technologies we use - own card above Summary */}
             {(job.tech_stack?.length ?? 0) > 0 && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-3 text-base font-semibold text-heading">
                     Technologies we use
@@ -179,7 +199,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Structured section cards */}
             {job.summary?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Summary
@@ -189,7 +209,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.responsibilities?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Responsibilities
@@ -199,7 +219,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.requirements?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Requirements
@@ -209,7 +229,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.what_we_offer?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     What we offer
@@ -219,7 +239,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.good_to_have?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Good to have
@@ -229,7 +249,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.benefits?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Benefits
@@ -241,7 +261,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Optional description */}
             {job.description?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Description
@@ -253,9 +273,9 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
 
-            {/* Apply CTA at bottom of main column */}
-            {applyProps && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+            {/* Apply CTA at bottom of main column (hidden for employers) */}
+            {!isEmployer && applyProps && (
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-6">
                   {applyProps.isClosed ? (
                     <p className="text-sm text-muted-foreground">
@@ -286,19 +306,19 @@ export default async function JobDetailPage({ params }: Props) {
             )}
           </article>
 
-          {/* Sidebar: company + apply (sidebar sticks so apply card stays visible) */}
+          {/* Sidebar: company, apply, similar jobs */}
           <aside className="w-full space-y-6 lg:sticky lg:top-6 lg:col-span-1 lg:self-start">
             {job.employer && (
-              <Card className="overflow-hidden rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     {job.employer.company_logo_url ? (
                       <Image
                         src={job.employer.company_logo_url}
                         alt=""
                         width={65}
                         height={65}
-                        className="max-h-[65px] max-w-[65px] h-auto w-auto shrink-0 rounded-lg object-contain"
+                        className="h-[65px] max-h-[65px] w-[65px] max-w-[65px] shrink-0 rounded-lg object-contain"
                         unoptimized
                       />
                     ) : (
@@ -324,22 +344,17 @@ export default async function JobDetailPage({ params }: Props) {
                         </a>
                       )}
                     </div>
-                  </div>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 w-full rounded-lg"
-                  >
-                    <Link href={`/employer/${job.employer_id}`}>
+                    <Link
+                      href={`/employer/${job.employer_id}`}
+                      className="shrink-0 text-sm text-primary hover:underline"
+                    >
                       About the company
                     </Link>
-                  </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
-
-            {applyProps && (
+            {!isEmployer && applyProps && (
               <JobApplyCard
                 isClosed={applyProps.isClosed}
                 applyHref={applyProps.applyHref}
@@ -350,7 +365,7 @@ export default async function JobDetailPage({ params }: Props) {
               />
             )}
             {similarJobs.length > 0 && (
-              <Card className="overflow-hidden rounded-3xl border border-border/70 bg-[#fdfdfc] shadow-sm">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
                 <CardContent className="p-5">
                   <h3 className="text-base font-semibold text-heading">
                     Similar offers
@@ -402,6 +417,7 @@ export default async function JobDetailPage({ params }: Props) {
             )}
           </aside>
         </div>
+      </div>
       </div>
     </main>
   );

@@ -32,6 +32,16 @@ export default async function SavedJobsPage() {
     redirect("/login?next=/saved-jobs");
   }
 
+  const profile = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+    .then((r) => r.data);
+  if (profile?.role === "employer") {
+    redirect("/employer/dashboard");
+  }
+
   const jobs = await getFavoritedJobs(user.id);
 
   return (

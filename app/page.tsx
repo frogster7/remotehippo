@@ -13,6 +13,11 @@ import { CompaniesWorthKnowing } from "./_components/companies-worth-knowing";
 export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const profile = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single().then((r) => r.data)
+    : null;
+  const isEmployer = profile?.role === "employer";
+
   const [jobCount, recentJobs, filterOptions, employers, favoritedJobIds] =
     await Promise.all([
       getActiveJobCount(),
@@ -33,6 +38,7 @@ export default async function HomePage() {
         jobs={recentJobs}
         favoritedJobIds={favoritedJobIds}
         isLoggedIn={!!user}
+        isEmployer={isEmployer}
       />
       <CompaniesWorthKnowing employers={employers} />
     </main>

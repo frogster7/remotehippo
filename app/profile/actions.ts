@@ -5,6 +5,7 @@ import {
   uploadCv,
   uploadCoverLetter,
   uploadLogo,
+  uploadBanner,
   deleteStorageFile,
   CV_BUCKET,
   LOGO_BUCKET,
@@ -298,3 +299,92 @@ export async function deleteLogoAndUpdateProfile(): Promise<{
   return { error: updateError?.message ?? null };
 }
 
+const MAX_BANNERS_PER_EMPLOYER = 3;
+
+export async function addBanner(formData: FormData): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "employer") return { error: "Employers only." };
+
+  const { count } = await supabase
+    .from("company_banners")
+    .select("id", { count: "exact", head: true })
+    .eq("employer_id", user.id);
+  if ((count ?? 0) >= MAX_BANNERS_PER_EMPLOYER) {
+    return { error: `You can have at most ${MAX_BANNERS_PER_EMPLOYER} banners.` };
+  }
+
+  const file = formData.get("file") as File | null;
+  if (!file?.size) return { error: "No file provided." };
+
+  const { url, error: uploadError } = await uploadBanner(supabase, user.id, file);
+  if (uploadError) return { error: uploadError };
+
+  const maxOrder = await supabase
+    .from("company_banners")
+    .select("display_order")
+    .eq("employer_id", user.id)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxOrder.data?.display_order ?? -1) + 1;
+
+  const { error: insertError } = await supabase.from("company_banners").insert({
+    employer_id: user.id,
+    url,
+    display_order: nextOrder,
+  });
+
+  return { error: insertError?.message ?? null };
+}
+
+export async function deleteBanner(bannerId: string): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: row } = await supabase
+    .from("company_banners")
+    .select("id, url")
+    .eq("id", bannerId)
+    .eq("employer_id", user.id)
+    .single();
+  if (!row) return { error: "Banner not found." };
+
+  const path = (() => {
+    const match = (row.url as string).match(/\/company-logos\/(.+)$/);
+    return match ? match[1] : null;
+  })();
+  if (path) {
+    const { error: delError } = await deleteStorageFile(
+      supabase,
+      LOGO_BUCKET,
+      path
+    );
+    if (delError) return { error: delError };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("company_banners")
+    .delete()
+    .eq("id", bannerId)
+    .eq("employer_id", user.id);
+
+  return { error: deleteError?.message ?? null };
+}

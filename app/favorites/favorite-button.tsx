@@ -10,6 +10,7 @@ interface FavoriteButtonProps {
   jobId: string;
   initialIsFavorited: boolean;
   isLoggedIn: boolean;
+  disabled?: boolean;
   variant?: "default" | "ghost" | "icon";
   icon?: "heart" | "star";
   className?: string;
@@ -19,6 +20,7 @@ export function FavoriteButton({
   jobId,
   initialIsFavorited,
   isLoggedIn,
+  disabled = false,
   variant = "default",
   icon = "heart",
   className = "",
@@ -28,6 +30,7 @@ export function FavoriteButton({
   const router = useRouter();
 
   const handleToggle = () => {
+    if (disabled) return;
     if (!isLoggedIn) {
       // Redirect to login
       router.push(`/login?next=${encodeURIComponent(window.location.pathname)}`);
@@ -49,8 +52,8 @@ export function FavoriteButton({
     return (
       <button
         onClick={handleToggle}
-        disabled={isPending}
-        className={`p-1.5 rounded-full hover:bg-accent transition-colors ${className}`}
+        disabled={isPending || disabled}
+        className={`p-1.5 rounded-full transition-colors ${disabled ? "cursor-not-allowed opacity-50" : "hover:bg-accent"} ${className}`}
         aria-label={isFavorited ? "Remove from saved jobs" : "Save job"}
       >
         <Icon
@@ -68,7 +71,7 @@ export function FavoriteButton({
   return (
     <Button
       onClick={handleToggle}
-      disabled={isPending}
+      disabled={isPending || disabled}
       variant={variant === "ghost" ? "ghost" : "outline"}
       className={className}
     >

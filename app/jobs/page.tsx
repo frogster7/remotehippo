@@ -72,6 +72,15 @@ export default async function JobsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const profile = user
+    ? await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+        .then((r) => r.data)
+    : null;
+  const isEmployer = profile?.role === "employer";
 
   const [jobs, filterOptions, favoritedJobIds, jobCount] = await Promise.all([
     getJobs(filters),
@@ -120,6 +129,7 @@ export default async function JobsPage({
               roles={filterOptions.roles}
               techOptions={filterOptions.tech}
               isLoggedIn={!!user}
+              isEmployer={isEmployer}
               layout="horizontal"
             />
           </Suspense>
@@ -156,6 +166,7 @@ export default async function JobsPage({
                       postedAt={formatRelativeTime(job.created_at)}
                       isFavorited={favoritedJobIds.has(job.id)}
                       isLoggedIn={!!user}
+                      isEmployer={isEmployer}
                     />
                   </li>
                 ))}

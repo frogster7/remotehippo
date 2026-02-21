@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
+  BarChart3,
   BellRing,
   Briefcase,
   ChevronDown,
@@ -14,6 +15,7 @@ import {
   Home,
   LayoutDashboard,
   Menu,
+  Plus,
   Sparkles,
   User,
 } from "lucide-react";
@@ -91,18 +93,17 @@ export function HeaderNav({
   const savedSearchesHref = isEmployer
     ? "/saved-searches"
     : "/dashboard?panel=saved-searches";
-  const editHref = isEmployer ? "/profile" : "/dashboard?panel=edit-profile";
+  const editHref = isEmployer ? "/employer/dashboard?panel=edit-profile" : "/dashboard?panel=edit-profile";
   const offersHref = isEmployer ? "/employer/dashboard" : "/dashboard?panel=offers";
   const documentsHref = isEmployer ? "/employer/dashboard" : "/dashboard?panel=documents";
   const notificationsPanelHref = isEmployer ? "/employer/dashboard" : "/dashboard?panel=notifications";
 
   const accountMenuItems = isEmployer
     ? [
-        { href: dashboardHref, label: "Your desktop", icon: LayoutDashboard },
-        { href: applicationsHref, label: "My applications", icon: Briefcase },
-        { href: savedJobsHref, label: "Saved", icon: Heart },
-        { href: documentsHref, label: "Documents", icon: FileText },
-        { href: notificationsPanelHref, label: "Notifications", icon: BellRing },
+        { href: "/employer/dashboard", label: "Your desktop", icon: LayoutDashboard },
+        { href: "/employer/dashboard?panel=listings", label: "Your job listings", icon: Briefcase },
+        { href: "/employer/dashboard?panel=stats", label: "Stats", icon: BarChart3 },
+        { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile", icon: User },
       ]
     : [
         { href: dashboardHref, label: "Your desktop", icon: Home },
@@ -118,13 +119,22 @@ export function HeaderNav({
     { href: "/jobs", label: "Jobs" },
     { href: "/blog", label: "Blog" },
     ...(user
-      ? [
-          { href: savedJobsHref, label: "Saved Jobs" },
-          { href: applicationsHref, label: "My applications" },
-          { href: savedSearchesHref, label: "Saved searches" },
-          { href: editHref, label: "Edit" },
-          { type: "signout" as const, label: "Sign out" },
-        ]
+      ? isEmployer
+        ? [
+            { href: "/employer/jobs/new", label: "Add new job" },
+            { href: "/employer/dashboard", label: "Your desktop" },
+            { href: "/employer/dashboard?panel=listings", label: "Your job listings" },
+            { href: "/employer/dashboard?panel=stats", label: "Stats" },
+            { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile" },
+            { type: "signout" as const, label: "Sign out" },
+          ]
+        : [
+            { href: savedJobsHref, label: "Saved Jobs" },
+            { href: applicationsHref, label: "My applications" },
+            { href: savedSearchesHref, label: "Saved searches" },
+            { href: editHref, label: "Edit" },
+            { type: "signout" as const, label: "Sign out" },
+          ]
       : [
           { href: "/login", label: "Log in" },
           { href: "/register", label: "Sign up" },
@@ -137,6 +147,7 @@ export function HeaderNav({
       <nav className="hidden md:flex items-center gap-3 text-base">
         {user ? (
           <>
+            {!isEmployer && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -196,6 +207,8 @@ export function HeaderNav({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
+            {!isEmployer && (
             <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -269,6 +282,15 @@ export function HeaderNav({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+            )}
+            {isEmployer && (
+              <Button asChild variant="outline" size="sm" className="h-9 shrink-0 gap-2 rounded-lg border-primary bg-transparent text-primary hover:bg-primary/10 hover:text-primary">
+                <Link href="/employer/jobs/new">
+                  <Plus className="h-4 w-4" />
+                  Add new job
+                </Link>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -280,7 +302,7 @@ export function HeaderNav({
                     <User className="h-3.5 w-3.5" />
                   </div>
                   <span className="truncate max-w-[100px]">
-                    My account
+                    {firstName ?? "My account"}
                   </span>
                   <ChevronDown className="h-4 w-4 shrink-0 opacity-80" />
                 </Button>

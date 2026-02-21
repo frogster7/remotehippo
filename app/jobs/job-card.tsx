@@ -15,6 +15,7 @@ interface JobCardProps {
   postedAt?: string;
   isFavorited: boolean;
   isLoggedIn: boolean;
+  isEmployer?: boolean;
 }
 
 function formatSalary(min: number | null, max: number | null): string {
@@ -63,6 +64,7 @@ export function JobCard({
   postedAt,
   isFavorited,
   isLoggedIn,
+  isEmployer = false,
 }: JobCardProps) {
   const [quickLookOpen, setQuickLookOpen] = useState(false);
   const applyProps = getJobApplyProps(job, job.slug);
@@ -133,6 +135,7 @@ export function JobCard({
                 jobId={job.id}
                 initialIsFavorited={isFavorited}
                 isLoggedIn={isLoggedIn}
+                disabled={isEmployer}
                 variant="icon"
                 className="rounded-xl hover:bg-muted/50 [&_svg]:h-5 [&_svg]:w-5"
               />
@@ -272,6 +275,7 @@ export function JobCard({
                 </p>
               )}
 
+              {!isEmployer && (
               <div className="border-t border-border/60 pt-4">
                 {applyProps.isClosed ? (
                   <p className="text-sm text-muted-foreground">
@@ -302,6 +306,7 @@ export function JobCard({
                   </>
                 )}
               </div>
+              )}
             </div>
           </CardContent>
         </div>

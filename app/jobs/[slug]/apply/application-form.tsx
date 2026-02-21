@@ -1,21 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import Image from "next/image";
+import { useRef, useState, useEffect } from "react";
 import { submitApplication } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import type { Job, ScreeningQuestion } from "@/lib/types";
 import { CV_ALLOWED_EXTENSIONS, isAllowedCvFileName } from "@/lib/storage";
 
@@ -46,6 +40,11 @@ type ApplicationFormProps = {
 
 const CV_ACCEPT = ".pdf,.doc,.docx";
 
+const fieldInputClass =
+  "h-11 rounded-lg border border-primary/30 bg-background px-3.5 text-base shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+const textareaBaseClass =
+  "flex w-full rounded-lg border border-primary/30 bg-background px-3.5 py-3 text-base shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-hidden transition-shadow";
+
 export function ApplicationForm({
   job,
   slug,
@@ -67,14 +66,17 @@ export function ApplicationForm({
   const [phone, setPhone] = useState(prefilledPhone);
   const [coverLetter, setCoverLetter] = useState("");
   const [selectedCvPath, setSelectedCvPath] = useState<string | null>(
-    savedCvs[0]?.storage_path ?? null
+    savedCvs[0]?.storage_path ?? null,
   );
   const [attachFile, setAttachFile] = useState<File | null>(null);
-  const [selectedCoverLetterPath, setSelectedCoverLetterPath] = useState<string | null>(
-    savedCoverLetters[0]?.storage_path ?? null
-  );
-  const [attachCoverLetterFile, setAttachCoverLetterFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedCoverLetterPath, setSelectedCoverLetterPath] = useState<
+    string | null
+  >(savedCoverLetters[0]?.storage_path ?? null);
+  const [attachCoverLetterFile, setAttachCoverLetterFile] =
+    useState<File | null>(null);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [emailSent, setEmailSent] = useState(true);
@@ -82,32 +84,49 @@ export function ApplicationForm({
   const [screeningAnswers, setScreeningAnswers] = useState<
     Record<string, string>
   >(() =>
-    Object.fromEntries(
-      screeningQuestions.map((question) => [question.id, ""]),
-    ),
+    Object.fromEntries(screeningQuestions.map((question) => [question.id, ""])),
   );
 
   const hasCvSource = hasCv || attachFile !== null;
 
+  useEffect(() => {
+    if (invalidField && fieldRefs.current[invalidField]) {
+      fieldRefs.current[invalidField]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [invalidField]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-    const serializedScreeningAnswers = screeningQuestions.map((question) => {
-      const rawAnswer = screeningAnswers[question.id] ?? "";
-      const answer = rawAnswer.trim();
-      return { question_id: question.id, answer };
-    });
+    setInvalidField(null);
+    setServerError(null);
+
+    if (!name.trim()) {
+      setInvalidField("applicant_name");
+      return;
+    }
+    if (!lastName.trim()) {
+      setInvalidField("applicant_last_name");
+      return;
+    }
+    if (!email.trim()) {
+      setInvalidField("applicant_email");
+      return;
+    }
+    if (!hasCvSource) {
+      setInvalidField("cv");
+      return;
+    }
     for (const question of screeningQuestions) {
       const answer = (screeningAnswers[question.id] ?? "").trim();
       if (!answer) {
-        setError("Please answer all pre-application questions.");
-        setLoading(false);
+        setInvalidField(`screening_${question.id}`);
         return;
       }
       if (question.type === "yes_no" && answer !== "yes" && answer !== "no") {
-        setError(`Invalid answer for "${question.prompt}".`);
-        setLoading(false);
+        setInvalidField(`screening_${question.id}`);
         return;
       }
       if (question.type === "multiple_choice") {
@@ -115,12 +134,18 @@ export function ApplicationForm({
           option.trim(),
         );
         if (!validOptions.includes(answer)) {
-          setError(`Invalid answer for "${question.prompt}".`);
-          setLoading(false);
+          setInvalidField(`screening_${question.id}`);
           return;
         }
       }
     }
+
+    setLoading(true);
+    const serializedScreeningAnswers = screeningQuestions.map((question) => {
+      const rawAnswer = screeningAnswers[question.id] ?? "";
+      const answer = rawAnswer.trim();
+      return { question_id: question.id, answer };
+    });
     const formData = new FormData();
     formData.set("applicant_name", name.trim());
     formData.set("applicant_last_name", lastName.trim());
@@ -144,7 +169,7 @@ export function ApplicationForm({
     const result = await submitApplication(slug, formData);
     setLoading(false);
     if (result.error) {
-      setError(result.error);
+      setServerError(result.error);
       return;
     }
     setEmailSent(result.emailSent ?? false);
@@ -158,10 +183,12 @@ export function ApplicationForm({
     e.target.value = "";
     if (!file) return;
     if (!isAllowedCvFileName(file.name)) {
-      setError(`Cover letter: allowed formats ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
+      setServerError(
+        `Cover letter: allowed formats ${CV_ALLOWED_EXTENSIONS.join(", ")}`,
+      );
       return;
     }
-    setError(null);
+    setServerError(null);
     setAttachCoverLetterFile(file);
     setSelectedCoverLetterPath(null);
   }
@@ -171,10 +198,11 @@ export function ApplicationForm({
     e.target.value = "";
     if (!file) return;
     if (!isAllowedCvFileName(file.name)) {
-      setError(`Allowed formats: ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
+      setServerError(`Allowed formats: ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
       return;
     }
-    setError(null);
+    setServerError(null);
+    if (invalidField === "cv") setInvalidField(null);
     setAttachFile(file);
   }
 
@@ -183,34 +211,47 @@ export function ApplicationForm({
 
   const updateScreeningAnswer = (questionId: string, value: string) => {
     setScreeningAnswers((prev) => ({ ...prev, [questionId]: value }));
+    if (invalidField === `screening_${questionId}`) setInvalidField(null);
   };
 
   const renderScreeningQuestionInput = (question: ScreeningQuestion) => {
     const value = screeningAnswers[question.id] ?? "";
     if (question.type === "yes_no") {
       return (
-        <div className="flex flex-wrap gap-3">
+        <div
+          className="mt-2 inline-flex w-fit rounded-lg border border-border/80 bg-muted/20 p-0.5 shadow-inner"
+          role="radiogroup"
+          aria-label={question.prompt}
+        >
           {[
             { value: "yes", label: "Yes" },
             { value: "no", label: "No" },
-          ].map((option) => (
-            <label
-              key={`${question.id}_${option.value}`}
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
-            >
-              <input
-                type="radio"
-                name={`screening_${question.id}`}
-                value={option.value}
-                checked={value === option.value}
-                onChange={(e) =>
-                  updateScreeningAnswer(question.id, e.target.value)
-                }
-                disabled={loading}
-              />
-              {option.label}
-            </label>
-          ))}
+          ].map((option) => {
+            const isSelected = value === option.value;
+            return (
+              <label
+                key={`${question.id}_${option.value}`}
+                className={`min-w-[56px] rounded-md px-3 py-1.5 text-center text-xs font-medium cursor-pointer transition-all duration-200 ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                } ${loading ? "pointer-events-none opacity-70" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name={`screening_${question.id}`}
+                  value={option.value}
+                  checked={isSelected}
+                  onChange={(e) =>
+                    updateScreeningAnswer(question.id, e.target.value)
+                  }
+                  disabled={loading}
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            );
+          })}
         </div>
       );
     }
@@ -220,21 +261,38 @@ export function ApplicationForm({
         <div className="space-y-2">
           {(question.options ?? []).map((option) => {
             const normalizedOption = option.trim();
+            const isSelected = value === normalizedOption;
             return (
               <label
                 key={`${question.id}_${normalizedOption}`}
-                className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm"
+                className={`relative flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-all duration-200 ease-out ${
+                  isSelected
+                    ? "border-primary/60 bg-primary/5 shadow-sm ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                    : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-primary/20"
+                }`}
               >
                 <input
                   type="radio"
                   name={`screening_${question.id}`}
                   value={normalizedOption}
-                  checked={value === normalizedOption}
+                  checked={isSelected}
                   onChange={(e) =>
                     updateScreeningAnswer(question.id, e.target.value)
                   }
                   disabled={loading}
+                  className="sr-only"
                 />
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "border-2 border-muted-foreground/40"
+                  }`}
+                >
+                  {isSelected && (
+                    <Check className="h-3 w-3" strokeWidth={2.5} />
+                  )}
+                </span>
                 {option}
               </label>
             );
@@ -250,25 +308,27 @@ export function ApplicationForm({
         placeholder="Type your answer"
         rows={3}
         disabled={loading}
+        className={textareaBaseClass}
       />
     );
   };
 
   if (success) {
     return (
-      <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-        <CardHeader>
-          <CardTitle>Application sent</CardTitle>
-          <CardDescription>
-            Your application for {job.title} at {companyName} has been submitted.
+      <Card className="overflow-hidden rounded-xl border border-primary/30 bg-form-card shadow-lg">
+        <CardContent className="pt-6">
+          <h2 className="text-xl font-semibold text-heading mb-2">
+            Application sent
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Your application for {job.title} at {companyName} has been
+            submitted.
             {emailSent
               ? " The employer will be notified by email."
               : emailError
                 ? ` The notification email could not be sent: ${emailError}. The employer may still see your application in their dashboard.`
                 : " Notification email was not sent (not configured). The employer may still see your application in their dashboard."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
           <Button asChild>
             <Link href={`/jobs/${slug}`}>Back to job</Link>
           </Button>
@@ -278,75 +338,89 @@ export function ApplicationForm({
   }
 
   return (
-    <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          {job.employer?.company_logo_url ? (
-            <Image
-              src={job.employer.company_logo_url}
-              alt=""
-              width={48}
-              height={48}
-              className="rounded-lg object-cover shrink-0"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium text-muted-foreground">
-              {companyName.slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          <div className="min-w-0">
-            <CardTitle>Apply for {job.title}</CardTitle>
-            <CardDescription>
-              {companyName} will receive your details and CV. You can add a
-              cover letter below.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Card className="overflow-hidden rounded-xl border border-primary/30 bg-form-card shadow-lg">
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {serverError && (
             <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
-              {error}
+              {serverError}
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="applicant_name">First name</Label>
+            <div
+              ref={(el) => {
+                fieldRefs.current["applicant_name"] = el;
+              }}
+              className={`space-y-2 rounded-lg p-1 transition-colors ${
+                invalidField === "applicant_name"
+                  ? "border-2 border-destructive bg-destructive/5 -m-1 p-1"
+                  : ""
+              }`}
+            >
+              <Label htmlFor="applicant_name">First name *</Label>
               <Input
                 id="applicant_name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (invalidField === "applicant_name") setInvalidField(null);
+                }}
                 required
                 disabled={loading}
                 autoComplete="given-name"
+                className={`${fieldInputClass} ${invalidField === "applicant_name" ? "border-destructive" : ""}`}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="applicant_last_name">Last name</Label>
+            <div
+              ref={(el) => {
+                fieldRefs.current["applicant_last_name"] = el;
+              }}
+              className={`space-y-2 rounded-lg p-1 transition-colors ${
+                invalidField === "applicant_last_name"
+                  ? "border-2 border-destructive bg-destructive/5 -m-1 p-1"
+                  : ""
+              }`}
+            >
+              <Label htmlFor="applicant_last_name">Last name *</Label>
               <Input
                 id="applicant_last_name"
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => {
+                  setLastName(e.target.value);
+                  if (invalidField === "applicant_last_name") setInvalidField(null);
+                }}
                 required
                 disabled={loading}
                 autoComplete="family-name"
+                className={`${fieldInputClass} ${invalidField === "applicant_last_name" ? "border-destructive" : ""}`}
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="applicant_email">Email</Label>
+          <div
+            ref={(el) => {
+              fieldRefs.current["applicant_email"] = el;
+            }}
+            className={`space-y-2 rounded-lg p-1 transition-colors ${
+              invalidField === "applicant_email"
+                ? "border-2 border-destructive bg-destructive/5 -m-1 p-1"
+                : ""
+            }`}
+          >
+            <Label htmlFor="applicant_email">Email *</Label>
             <Input
               id="applicant_email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (invalidField === "applicant_email") setInvalidField(null);
+              }}
               required
               disabled={loading}
               autoComplete="email"
+              className={fieldInputClass}
             />
           </div>
           <div className="space-y-2">
@@ -358,54 +432,89 @@ export function ApplicationForm({
               onChange={(e) => setPhone(e.target.value)}
               disabled={loading}
               autoComplete="tel"
+              className={`${fieldInputClass} ${invalidField === "applicant_email" ? "border-destructive" : ""}`}
             />
           </div>
-          <div className="space-y-2">
-            <Label>CV for this application</Label>
+          <div
+            ref={(el) => {
+              fieldRefs.current["cv"] = el;
+            }}
+            className={`space-y-2 rounded-lg p-1 transition-colors ${
+              invalidField === "cv"
+                ? "border-2 border-destructive bg-destructive/5 -m-1 p-1"
+                : ""
+            }`}
+          >
+            <Label>CV for this application *</Label>
             <p className="text-sm text-muted-foreground">
-              Use a saved CV from your profile or upload one for this application only.
+              Use a saved CV from your profile or upload one for this
+              application only.
             </p>
             {savedCvs.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Saved CVs</p>
                 <div className="flex flex-col gap-2">
-                  {savedCvs.map((cv) => (
-                    <label
-                      key={cv.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50"
-                    >
-                      <input
-                        type="radio"
-                        name="cv_choice"
-                        value={cv.storage_path}
-                        checked={!attachFile && selectedCvPath === cv.storage_path}
-                        onChange={() => {
-                          setSelectedCvPath(cv.storage_path);
-                          setAttachFile(null);
-                        }}
-                        disabled={loading}
-                        className="rounded-full border-input"
-                      />
-                      <span className="text-sm truncate flex-1">{cv.fileName}</span>
-                      {cv.downloadUrl && (
-                        <a
-                          href={cv.downloadUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline shrink-0"
-                          onClick={(e) => e.stopPropagation()}
+                  {savedCvs.map((cv) => {
+                    const isSelected =
+                      !attachFile && selectedCvPath === cv.storage_path;
+                    return (
+                      <label
+                        key={cv.id}
+                        className={`relative flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-all duration-200 ease-out ${
+                          isSelected
+                            ? "border-primary/60 bg-primary/5 shadow-sm ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                            : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-primary/20"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="cv_choice"
+                          value={cv.storage_path}
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedCvPath(cv.storage_path);
+                            setAttachFile(null);
+                            if (invalidField === "cv") setInvalidField(null);
+                          }}
+                          disabled={loading}
+                          className="sr-only"
+                        />
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "border-2 border-muted-foreground/40"
+                          }`}
                         >
-                          Preview
-                        </a>
-                      )}
-                    </label>
-                  ))}
+                          {isSelected && (
+                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                          )}
+                        </span>
+                        <span className="text-sm truncate flex-1">
+                          {cv.fileName}
+                        </span>
+                        {cv.downloadUrl && (
+                          <a
+                            href={cv.downloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Preview
+                          </a>
+                        )}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
             <div className="space-y-1">
               <p className="text-sm font-medium">
-                {savedCvs.length > 0 ? "Or upload a different file for this application" : "Upload a file"}
+                {savedCvs.length > 0
+                  ? "Or upload a different file for this application"
+                  : "Upload a file"}
               </p>
               <input
                 ref={cvInputRef}
@@ -419,6 +528,7 @@ export function ApplicationForm({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-11 rounded-lg border-border/80 shadow-sm hover:bg-secondary/80"
                 onClick={() => cvInputRef.current?.click()}
                 disabled={loading}
               >
@@ -426,7 +536,8 @@ export function ApplicationForm({
               </Button>
               {attachFile && (
                 <span className="text-sm text-muted-foreground block">
-                  This file will be used for this application only (not saved to your profile).
+                  This file will be used for this application only (not saved to
+                  your profile).
                 </span>
               )}
             </div>
@@ -439,53 +550,101 @@ export function ApplicationForm({
           <div className="space-y-2">
             <Label>Cover letter (optional)</Label>
             <p className="text-sm text-muted-foreground">
-              Add a cover letter from your documents or upload one for this application.
+              Add a cover letter from your documents or upload one for this
+              application.
             </p>
             {savedCoverLetters.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">From documents</p>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50">
-                    <input
-                      type="radio"
-                      name="cover_letter_choice"
-                      value=""
-                      checked={!selectedCoverLetterPath && !attachCoverLetterFile}
-                      onChange={() => {
-                        setSelectedCoverLetterPath(null);
-                        setAttachCoverLetterFile(null);
-                      }}
-                      disabled={loading}
-                      className="rounded-full border-input"
-                    />
-                    <span className="text-sm">No cover letter</span>
-                  </label>
-                  {savedCoverLetters.map((cl) => (
-                    <label
-                      key={cl.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50"
-                    >
-                      <input
-                        type="radio"
-                        name="cover_letter_choice"
-                        value={cl.storage_path}
-                        checked={!attachCoverLetterFile && selectedCoverLetterPath === cl.storage_path}
-                        onChange={() => {
-                          setSelectedCoverLetterPath(cl.storage_path);
-                          setAttachCoverLetterFile(null);
-                        }}
-                        disabled={loading}
-                        className="rounded-full border-input"
-                      />
-                      <span className="text-sm truncate flex-1">{cl.fileName}</span>
-                    </label>
-                  ))}
+                  {(() => {
+                    const noLetterSelected =
+                      !selectedCoverLetterPath && !attachCoverLetterFile;
+                    return (
+                      <label
+                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-all duration-200 ease-out ${
+                          noLetterSelected
+                            ? "border-primary/60 bg-primary/5 shadow-sm ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                            : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-primary/20"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="cover_letter_choice"
+                          value=""
+                          checked={noLetterSelected}
+                          onChange={() => {
+                            setSelectedCoverLetterPath(null);
+                            setAttachCoverLetterFile(null);
+                          }}
+                          disabled={loading}
+                          className="sr-only"
+                        />
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            noLetterSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "border-2 border-muted-foreground/40"
+                          }`}
+                        >
+                          {noLetterSelected && (
+                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                          )}
+                        </span>
+                        <span className="text-sm">No cover letter</span>
+                      </label>
+                    );
+                  })()}
+                  {savedCoverLetters.map((cl) => {
+                    const isSelected =
+                      !attachCoverLetterFile &&
+                      selectedCoverLetterPath === cl.storage_path;
+                    return (
+                      <label
+                        key={cl.id}
+                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm cursor-pointer transition-all duration-200 ease-out ${
+                          isSelected
+                            ? "border-primary/60 bg-primary/5 shadow-sm ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                            : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-primary/20"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="cover_letter_choice"
+                          value={cl.storage_path}
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedCoverLetterPath(cl.storage_path);
+                            setAttachCoverLetterFile(null);
+                          }}
+                          disabled={loading}
+                          className="sr-only"
+                        />
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "border-2 border-muted-foreground/40"
+                          }`}
+                        >
+                          {isSelected && (
+                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                          )}
+                        </span>
+                        <span className="text-sm truncate flex-1">
+                          {cl.fileName}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
             <div className="space-y-1">
               <p className="text-sm font-medium">
-                {savedCoverLetters.length > 0 ? "Or upload for this application only" : "Upload a cover letter"}
+                {savedCoverLetters.length > 0
+                  ? "Or upload for this application only"
+                  : "Upload a cover letter"}
               </p>
               <input
                 ref={coverLetterInputRef}
@@ -499,15 +658,20 @@ export function ApplicationForm({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-11 rounded-lg border-border/80 shadow-sm hover:bg-secondary/80"
                 onClick={() => coverLetterInputRef.current?.click()}
                 disabled={loading}
               >
-                {attachCoverLetterFile ? attachCoverLetterFile.name : "Choose file"}
+                {attachCoverLetterFile
+                  ? attachCoverLetterFile.name
+                  : "Choose file"}
               </Button>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cover_letter">Cover letter message (optional)</Label>
+            <Label htmlFor="cover_letter">
+              Cover letter message (optional)
+            </Label>
             <Textarea
               id="cover_letter"
               value={coverLetter}
@@ -515,25 +679,42 @@ export function ApplicationForm({
               placeholder="Add a short message or introduction..."
               rows={3}
               disabled={loading}
-              className="resize-none"
+              className={textareaBaseClass}
             />
           </div>
           {screeningQuestions.length > 0 && (
-            <div className="space-y-3 rounded-lg border border-border/70 bg-muted/20 p-4">
+            <div className="space-y-3 rounded-lg border border-primary/20 bg-muted/20 p-4">
               <p className="text-sm font-semibold text-foreground">
                 Pre-application questions
               </p>
               {screeningQuestions.map((question, index) => (
-                <div key={question.id} className="space-y-2">
-                  <Label htmlFor={`screening_${question.id}`}>
-                    {index + 1}. {question.prompt}
+                <div
+                  key={question.id}
+                  ref={(el) => {
+                    fieldRefs.current[`screening_${question.id}`] = el;
+                  }}
+                  className={`space-y-1 rounded-lg p-2 transition-colors ${
+                    invalidField === `screening_${question.id}`
+                      ? "rounded-lg border-2 border-destructive bg-destructive/5"
+                      : ""
+                  }`}
+                >
+                  <Label
+                    htmlFor={`screening_${question.id}`}
+                    className="block text-sm font-medium"
+                  >
+                    {index + 1}. {question.prompt} *
                   </Label>
-                  {renderScreeningQuestionInput(question)}
+                  <div className="mt-2">{renderScreeningQuestionInput(question)}</div>
                 </div>
               ))}
             </div>
           )}
-          <Button type="submit" disabled={loading || !hasCvSource}>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="h-11 rounded-lg px-6 shadow-md hover:shadow-lg transition-shadow"
+          >
             {loading ? "Sending…" : "Submit application"}
           </Button>
         </form>

@@ -41,8 +41,7 @@ export default async function NewJobPage() {
             New job listing
           </h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Fill in the details below. You can save as draft and publish when
-            you’re ready.
+            Fill in the details below.
           </p>
         </header>
 

@@ -24,6 +24,16 @@ export default async function SavedSearchesPage() {
     redirect("/login?next=/saved-searches");
   }
 
+  const profile = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+    .then((r) => r.data);
+  if (profile?.role === "employer") {
+    redirect("/employer/dashboard");
+  }
+
   const searches = await getSavedSearches(user.id);
 
   return (

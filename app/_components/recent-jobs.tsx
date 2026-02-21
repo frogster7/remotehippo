@@ -22,12 +22,14 @@ function RecentJobCard({
   postedAt,
   isFavorited,
   isLoggedIn,
+  isEmployer,
   showSuperOffer,
 }: {
   job: Job;
   postedAt: string;
   isFavorited: boolean;
   isLoggedIn: boolean;
+  isEmployer: boolean;
   showSuperOffer: boolean;
 }) {
   const companyName =
@@ -106,6 +108,7 @@ function RecentJobCard({
               jobId={job.id}
               initialIsFavorited={isFavorited}
               isLoggedIn={isLoggedIn}
+              disabled={isEmployer}
               variant="icon"
               icon="star"
               className="rounded-full p-1.5"
@@ -145,6 +148,7 @@ interface RecentJobsProps {
   jobs: Job[];
   favoritedJobIds: Set<string>;
   isLoggedIn: boolean;
+  isEmployer?: boolean;
 }
 
 const CARD_WIDTH = 288;
@@ -154,6 +158,7 @@ export function RecentJobs({
   jobs,
   favoritedJobIds,
   isLoggedIn,
+  isEmployer = false,
 }: RecentJobsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -192,6 +197,7 @@ export function RecentJobs({
                 postedAt={formatRelativeTime(job.created_at)}
                 isFavorited={favoritedJobIds.has(job.id)}
                 isLoggedIn={isLoggedIn}
+                isEmployer={isEmployer}
                 showSuperOffer={
                   (job.salary_max != null && job.salary_max >= 15000) ||
                   index % 2 === 0

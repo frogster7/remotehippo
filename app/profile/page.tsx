@@ -20,13 +20,22 @@ export default async function ProfilePage() {
     redirect("/login?next=/profile");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "id, role, full_name, last_name, phone_number, company_name, company_website, company_logo_url, company_about, company_location, application_preference"
-    )
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: bannersData }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        "id, role, full_name, last_name, phone_number, company_name, company_website, company_logo_url, company_about, company_location, application_preference"
+      )
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("company_banners")
+      .select("id, url")
+      .eq("employer_id", user.id)
+      .order("display_order", { ascending: true }),
+  ]);
+
+  const banners = (bannersData ?? []).map((b) => ({ id: b.id, url: b.url }));
 
   const profileData: ProfileType = {
     id: profile?.id ?? user.id,
@@ -61,7 +70,7 @@ export default async function ProfilePage() {
             Update your account and, if you’re an employer, your company info.
           </p>
         </div>
-        <ProfileForm profile={profileData} />
+        <ProfileForm profile={profileData} banners={banners} />
       </div>
     </main>
   );

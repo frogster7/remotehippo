@@ -479,6 +479,30 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Company dashboard, job analytics, and banners
+
+**What was done:**
+
+- **Job analytics:** Migration `015_job_analytics.sql` – tables `job_views` (id, job_id, viewed_at) and `job_apply_clicks` (id, job_id, clicked_at). RLS: employers can SELECT for own jobs; anyone can INSERT. `lib/job-analytics.ts` – `recordJobView(jobId)`, `recordApplyClick(jobId)`, `getJobStats(employerId)` (per-job views, apply clicks, applications). Job detail page calls `recordJobView` on load; apply page calls `recordApplyClick` on load.
+- **Company dashboard:** `app/employer/dashboard/page.tsx` – refactored to match job seeker dashboard layout (sidebar + panels). Same `bg-[#f4f5fb]`, 2-column grid (260px aside + main). Panels: Your desktop (home), Your job listings, Stats, Edit profile. Desktop home: greeting, stat cards (jobs, views, apply clicks, applications), "Your job listings" card with job list + "Create new job" button. Listings panel: job list with View, Edit, CloseReopenButton. Stats panel: per-job table (Views, Apply clicks, Applications). Edit profile: inline ProfileForm (employer fields). Sign out in sidebar.
+- **Company banners:** Migration `016_company_banners.sql` – table `company_banners` (id, employer_id, url, display_order, created_at), max 3 per employer. Storage in `company-logos` bucket subfolder `{userId}/banners/`. `lib/storage.ts` – `uploadBanner()`. Profile actions – `addBanner(formData)`, `deleteBanner(bannerId)`. Profile form (employer only): Banner section with add/delete, preview grid.
+- **Job detail page:** Banner displayed above hero card via `BannerSlider` – light gradient background, subtle dot pattern, aspect 21/9, min-h 200px. Slider when multiple banners (dots, prev/next, auto-advance 5s). Company logo (40×40 max) and company name above job title in hero card; company name links to `/employer/[id]`.
+- **Edit profile:** Removed "How to receive applications" (application preference) from employer form; existing value preserved on save.
+- **Header nav:** Employer account menu – Your desktop, Your job listings, Stats, Edit profile. Hidden: Saved jobs, Notifications. Edit links to `/employer/dashboard?panel=edit-profile`.
+
+**Key files:**
+
+- `supabase/migrations/015_job_analytics.sql`, `016_company_banners.sql`.
+- `lib/job-analytics.ts`, `lib/storage.ts` (uploadBanner).
+- `app/employer/dashboard/page.tsx`, `app/employer/dashboard/loading.tsx`.
+- `app/jobs/[slug]/page.tsx`, `app/jobs/[slug]/banner-slider.tsx`.
+- `app/profile/profile-form.tsx`, `app/profile/actions.ts` (addBanner, deleteBanner).
+- `app/_components/header-nav.tsx` (employer links).
+
+**Notes:** Run migrations 015 and 016 in Supabase SQL Editor. Banners stored in company-logos bucket; RLS on storage allows employer uploads in own path.
+
+---
+
 ## Quick reference
 
 
@@ -517,6 +541,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Profiles backfill / apply FK fix            | Migration 011, `app/jobs/[slug]/apply/actions.ts` (profile upsert before insert application).                                                               |
 | Dashboard, documents, notifications         | `app/dashboard/page.tsx`, `app/dashboard/documents-panel.tsx`, `lib/notifications.ts`, migrations 012–014, `app/_components/header-nav.tsx` (dropdowns).     |
 | Cover letters, default CV/CL                | Migrations 013–014, `app/profile/actions.ts` (addCoverLetterToUser, setDefaultCv, setDefaultCoverLetter), `app/jobs/[slug]/apply/*`.                         |
+| Company dashboard, job stats, banners       | Migrations 015–016, `lib/job-analytics.ts`, `app/employer/dashboard/*`, `app/jobs/[slug]/banner-slider.tsx`, `app/profile/*` (addBanner, deleteBanner).     |
 
 
 ---
@@ -664,3 +689,23 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `lib/email.ts` – coverLetterDownloadUrl in notification
 
 **Notes:** Run migrations 012, 013, 014 in Supabase. Notifications require employer job create/update to trigger. Default CV/cover letter used when applying (first by is_default, else first by created_at).
+
+---
+
+## Apply form and job form polish
+
+**What was done:**
+
+- **Apply form design:** Styled to match create new job form: `bg-form-card`, `border-primary/30`, `rounded-xl`, `shadow-lg`. Company logo moved to header card above form (max 48×48, `object-contain`). Form width `max-w-4xl` to match job form. Inputs use `fieldInputClass`; textareas use `textareaBaseClass`.
+- **Selection controls (no radio circles):** Yes/No screening questions use segmented control (compact pill group). Documents (CV, cover letter) and multiple-choice screening use selectable cards with checkmark badge when selected (h-5 w-5 circle, Check icon).
+- **Required fields:** Asterisk (*) on First name, Last name, Email, CV, and each screening question. Validation: red border (`border-destructive`) on invalid field; page scrolls to first invalid field (`scrollIntoView`). No text error message for missing fields. Server errors (submit failure, file format) still show banner.
+- **Yes/No layout:** Control placed below question label with `mt-2`; smaller size (`text-xs`, `px-3 py-1.5`).
+- **Job form – Pre-application questions:** Each question shows type in parentheses: (Text), (Yes/No), or (Multiple choice).
+- **New job page:** Removed subtitle "You can save as draft and publish when you're ready."; header now "Fill in the details below."
+
+**Key files:**
+
+- `app/jobs/[slug]/apply/page.tsx` – header card with logo, `max-w-4xl`.
+- `app/jobs/[slug]/apply/application-form.tsx` – field styling, segmented control, checkmark selection, `invalidField` state, scroll on validation.
+- `app/employer/job-form.tsx` – question type label per screening question.
+- `app/employer/jobs/new/page.tsx` – simplified header subtitle.

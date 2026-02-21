@@ -113,11 +113,13 @@ export function JobsFilter({
   roles,
   techOptions,
   isLoggedIn = false,
+  isEmployer = false,
   layout = "sidebar",
 }: {
   roles: string[];
   techOptions: string[];
   isLoggedIn?: boolean;
+  isEmployer?: boolean;
   layout?: "sidebar" | "horizontal";
 }) {
   const router = useRouter();
@@ -633,7 +635,7 @@ export function JobsFilter({
               <Trash2 className="h-4 w-4" />
               Clear
             </Button>
-            {isLoggedIn && (
+            {isLoggedIn && !isEmployer && (
               <div className="ml-auto shrink-0">
                 <SaveSearchButton filters={filters as JobFilters} />
               </div>
@@ -685,7 +687,7 @@ export function JobsFilter({
               </span>
             ))}
           </div>
-          {isLoggedIn && (
+          {isLoggedIn && !isEmployer && (
             <div className="mt-4 border-t border-border/80 pt-3">
               <SaveSearchButton filters={filters as JobFilters} />
             </div>

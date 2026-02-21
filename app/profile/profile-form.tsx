@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import type { ApplicationPreference, Profile } from "@/lib/types";
-import { APPLICATION_PREFERENCES } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 import {
   isAllowedLogoFileName,
   LOGO_ALLOWED_EXTENSIONS,
@@ -13,6 +12,8 @@ import {
   updateProfile,
   uploadLogoAndUpdateProfile,
   deleteLogoAndUpdateProfile,
+  addBanner,
+  deleteBanner,
   type ProfileUpdateData,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -26,19 +27,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Building2, User } from "lucide-react";
+import { Building2, Trash2, User } from "lucide-react";
 const LOGO_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export type CompanyBanner = { id: string; url: string };
+
+export function ProfileForm({
+  profile,
+  banners = [],
+}: {
+  profile: Profile;
+  banners?: CompanyBanner[];
+}) {
   const router = useRouter();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [lastName, setLastName] = useState(profile.last_name ?? "");
@@ -54,14 +57,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   const [companyLocation, setCompanyLocation] = useState(
     profile.company_location ?? ""
   );
-  const [applicationPreference, setApplicationPreference] = useState<
-    ApplicationPreference | ""
-  >(profile.application_preference ?? "");
-
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [logoLoading, setLogoLoading] = useState(false);
+  const [bannerLoading, setBannerLoading] = useState(false);
 
   const updateData = (): ProfileUpdateData => ({
     full_name: fullName.trim() || null,
@@ -75,7 +75,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     company_location:
       role === "employer" ? (companyLocation.trim() || null) : null,
     application_preference:
-      role === "employer" ? (applicationPreference || null) : null,
+      role === "employer" ? (profile.application_preference ?? null) : null,
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -119,6 +119,39 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     setLogoLoading(true);
     const result = await deleteLogoAndUpdateProfile();
     setLogoLoading(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isAllowedLogoFileName(file.name)) {
+      setError(`Allowed formats: ${LOGO_ACCEPT}`);
+      return;
+    }
+    setError(null);
+    setBannerLoading(true);
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await addBanner(formData);
+    setBannerLoading(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    if (bannerInputRef.current) bannerInputRef.current.value = "";
+    router.refresh();
+  }
+
+  async function handleDeleteBanner(bannerId: string) {
+    setError(null);
+    setBannerLoading(true);
+    const result = await deleteBanner(bannerId);
+    setBannerLoading(false);
     if (result.error) {
       setError(result.error);
       return;
@@ -242,29 +275,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="applicationPreference">
-                    How to receive applications
-                  </Label>
-                  <Select
-                    value={applicationPreference || undefined}
-                    onValueChange={(v) =>
-                      setApplicationPreference((v as ApplicationPreference) || "")
-                    }
-                    disabled={loading}
-                  >
-                    <SelectTrigger id="applicationPreference">
-                      <SelectValue placeholder="Choose preference" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {APPLICATION_PREFERENCES.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label} – {opt.description}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </>
             )}
             <Button type="submit" disabled={loading}>
@@ -346,6 +356,68 @@ export function ProfileForm({ profile }: { profile: Profile }) {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "employer" && (
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">Banner images</CardTitle>
+            <CardDescription>
+              Up to 3 banners shown in your job listings. Add more than one for a
+              slider. JPG, PNG, WebP, GIF (max 2 MB each).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              {banners.map((b) => (
+                <div
+                  key={b.id}
+                  className="relative group rounded-lg overflow-hidden border bg-muted/30 aspect-video w-40 shrink-0"
+                >
+                  <Image
+                    src={b.url}
+                    alt="Banner"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDeleteBanner(b.id)}
+                    disabled={bannerLoading}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+              {banners.length < 3 && (
+                <div>
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    accept={LOGO_ACCEPT}
+                    className="hidden"
+                    onChange={handleBannerChange}
+                    disabled={bannerLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={bannerLoading}
+                    className="h-full min-h-[80px] aspect-video w-40 border-dashed"
+                  >
+                    {bannerLoading ? "Uploading…" : "Add banner"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

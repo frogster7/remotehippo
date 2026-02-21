@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getJobBySlug } from "@/lib/jobs";
+import { recordApplyClick } from "@/lib/job-analytics";
 import { createSignedCvUrl } from "@/lib/storage";
 import { getCvFileName } from "@/lib/utils";
 import { ApplicationForm } from "./application-form";
@@ -36,6 +38,8 @@ export default async function ApplyPage({ params }: Props) {
   ) {
     redirect(`/jobs/${slug}`);
   }
+
+  await recordApplyClick(job.id);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -89,7 +93,7 @@ export default async function ApplyPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="mx-auto w-full max-w-[600px] px-4 py-6 sm:px-6">
+      <div className="container mx-auto max-w-4xl px-4 py-10 sm:px-6">
         <Link
           href={`/jobs/${slug}`}
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -97,11 +101,31 @@ export default async function ApplyPage({ params }: Props) {
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to job
         </Link>
-        <div className="mb-4 rounded-3xl border border-border/80 bg-card/95 p-5 shadow-sm">
-          <h1 className="text-xl font-semibold text-heading">
-            Apply for {job.title}
-          </h1>
-          <p className="text-sm text-muted-foreground">{companyName}</p>
+        <div className="mb-4 overflow-hidden rounded-xl border border-primary/30 bg-form-card p-5 shadow-lg">
+          <div className="flex flex-wrap items-center gap-3">
+            {job.employer?.company_logo_url ? (
+              <div className="flex h-12 w-12 max-h-12 max-w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted/30">
+                <Image
+                  src={job.employer.company_logo_url}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="max-h-12 max-w-12 object-contain"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="flex h-12 w-12 max-h-12 max-w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium text-muted-foreground">
+                {companyName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-semibold text-heading">
+                Apply for {job.title}
+              </h1>
+              <p className="text-sm text-muted-foreground">{companyName}</p>
+            </div>
+          </div>
         </div>
         <ApplicationForm
           job={job}

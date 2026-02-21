@@ -64,6 +64,13 @@ function makePath(userId: string, file: File): string {
   return `${userId}/${unique}`;
 }
 
+/** Banner path: {userId}/banners/{timestamp}-{filename} */
+function makeBannerPath(userId: string, file: File): string {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const unique = `${Date.now()}-${safeName}`;
+  return `${userId}/banners/${unique}`;
+}
+
 /** Cover letter path: {userId}/cover-letters/{timestamp}-{filename} */
 function makeCoverLetterPath(userId: string, file: File): string {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -156,6 +163,39 @@ export async function uploadLogo(
     .from(LOGO_BUCKET)
     .getPublicUrl(path);
   return { url: urlData.publicUrl, error: null };
+}
+
+/**
+ * Upload a company banner to company-logos bucket (subfolder banners).
+ * Same validation as logos: JPG, PNG, WebP, GIF, max 2 MB.
+ */
+export async function uploadBanner(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File
+): Promise<{ url: string; path: string; error: string | null }> {
+  if (file.size > LOGO_MAX_BYTES) {
+    return { url: "", path: "", error: "Image must be 2 MB or smaller." };
+  }
+  if (!isAllowedLogoType(file.type)) {
+    return {
+      url: "",
+      path: "",
+      error: "Only JPG, PNG, WebP, and GIF images are allowed.",
+    };
+  }
+
+  const path = makeBannerPath(userId, file);
+  const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+  });
+  if (error) return { url: "", path: "", error: error.message };
+
+  const { data: urlData } = supabase.storage
+    .from(LOGO_BUCKET)
+    .getPublicUrl(path);
+  return { url: urlData.publicUrl, path, error: null };
 }
 
 /**

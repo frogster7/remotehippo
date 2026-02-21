@@ -709,6 +709,9 @@ export function JobForm({
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-foreground">
                         Question {questionIdx + 1}
+                        <span className="ml-1.5 font-normal text-muted-foreground">
+                          ({question.type === "text" ? "Text" : question.type === "yes_no" ? "Yes/No" : "Multiple choice"})
+                        </span>
                       </p>
                       <button
                         type="button"
