@@ -6,13 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+
+const fieldInputClass =
+  "h-11 rounded-lg border border-primary/30 bg-background px-3.5 text-base shadow-sm transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 export function UserRegisterForm() {
   const router = useRouter();
@@ -54,36 +51,28 @@ export function UserRegisterForm() {
 
   if (success) {
     return (
-      <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-        <CardHeader>
-          <CardTitle>Check your email</CardTitle>
-          <CardDescription>
-            We sent a confirmation link to {email}. Click it to activate your
-            account, then log in.
-          </CardDescription>
-        </CardHeader>
+      <Card className="overflow-hidden rounded-xl border border-primary/30 bg-form-card p-6 shadow-lg">
+        <h2 className="text-lg font-semibold text-heading">Check your email</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We sent a confirmation link to {email}. Click it to activate your
+          account, then log in.
+        </p>
       </Card>
     );
   }
 
   return (
-    <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-      <CardHeader>
-        <CardTitle>Create your account</CardTitle>
-        <CardDescription>
-          Enter your details to start applying for jobs.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Card className="overflow-hidden rounded-xl border border-primary/30 bg-form-card shadow-lg">
+      <CardContent className="p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
+            <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First name</Label>
+              <Label htmlFor="firstName">First name *</Label>
               <Input
                 id="firstName"
                 type="text"
@@ -93,10 +82,11 @@ export function UserRegisterForm() {
                 required
                 autoComplete="given-name"
                 disabled={loading}
+                className={fieldInputClass}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last name</Label>
+              <Label htmlFor="lastName">Last name *</Label>
               <Input
                 id="lastName"
                 type="text"
@@ -106,11 +96,12 @@ export function UserRegisterForm() {
                 required
                 autoComplete="family-name"
                 disabled={loading}
+                className={fieldInputClass}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
@@ -120,10 +111,11 @@ export function UserRegisterForm() {
               required
               autoComplete="email"
               disabled={loading}
+              className={fieldInputClass}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone number</Label>
+            <Label htmlFor="phoneNumber">Phone number *</Label>
             <Input
               id="phoneNumber"
               type="tel"
@@ -133,10 +125,11 @@ export function UserRegisterForm() {
               required
               autoComplete="tel"
               disabled={loading}
+              className={fieldInputClass}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Password *</Label>
             <Input
               id="password"
               type="password"
@@ -146,10 +139,15 @@ export function UserRegisterForm() {
               minLength={6}
               autoComplete="new-password"
               disabled={loading}
+              className={fieldInputClass}
             />
             <p className="text-xs text-muted-foreground">At least 6 characters</p>
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="h-11 w-full rounded-lg shadow-sm"
+            disabled={loading}
+          >
             {loading ? "Creating account…" : "Sign up"}
           </Button>
         </form>

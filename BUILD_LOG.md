@@ -503,6 +503,24 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Sign up forms – styling, logo/banner upload, required markers
+
+**What was done:**
+
+- **Form style match:** Job seeker and company sign-up forms restyled to match create job form: `bg-form-card`, `rounded-xl`, `border-primary/30`, `shadow-lg`; `fieldInputClass` and `textareaBaseClass` for inputs; same page layout as new job page (container `max-w-4xl`, back link with ArrowLeft, header block).
+- **Job seeker form (`app/register/user/`):** Page layout aligned with job form; card styling; required field asterisk (*) on First name, Last name, Email, Phone number, Password.
+- **Company form (`app/register/company/`):** Removed company logo URL field and "How do you want to receive applications?" field. Added file upload for logo and banners (optional). Add logo / Add banner use upload-zone UI: dashed border, primary tint, ImagePlus icon, hover states; logo and banner previews with replace/remove. After signUp, if session exists, calls `uploadLogoAndUpdateProfile` and `addBanner` to upload selected files. Required asterisk (*) on Company name, About your company, Company location, Email, Password.
+
+**Key files:**
+
+- `app/register/user/page.tsx`, `app/register/user/user-register-form.tsx`.
+- `app/register/company/page.tsx`, `app/register/company/company-register-form.tsx`.
+- `app/profile/actions.ts` (uploadLogoAndUpdateProfile, addBanner reused for post-signup upload).
+
+**Notes:** Logo and banners upload only when signUp creates a session (e.g. email confirmation off). With email confirmation on, user adds them later in profile.
+
+---
+
 ## Quick reference
 
 
@@ -510,7 +528,7 @@ Reference for what was implemented at each major step. Use this when debugging o
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Change Supabase env                         | `.env.local`, `.env.example`                                                                                                                                |
 | Change DB or RLS                            | `supabase/migrations/001_initial_schema.sql` (then re-run or add new migration)                                                                             |
-| Fix auth (login/register)                   | `app/login/`_, `app/register/_`, `app/auth/callback/route.ts`                                                                                               |
+| Fix auth (login/register)                   | `app/login/`_, `app/register/_`, `app/auth/callback/route.ts`. Sign up forms: `app/register/user/`, `app/register/company/` (job-form style, logo/banner upload). |
 | Fix profile                                 | `app/profile/`*, RLS on `profiles`                                                                                                                          |
 | Fix header / auth state                     | `app/_components/header.tsx`, `app/layout.tsx`                                                                                                              |
 | Jobs list / filters                         | `app/jobs/page.tsx`, `app/jobs/jobs-filter.tsx`, `app/jobs/job-card.tsx`, `lib/jobs.ts`                                                                     |
