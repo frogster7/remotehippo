@@ -515,6 +515,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Homepage hero collapse, tech icons          | `app/_components/home-hero.tsx`, `next.config.ts`.                                                                                                          |
 | Pre-application questions (screening)       | Migrations 010–011, `lib/types.ts` (ScreeningQuestion, ScreeningAnswer), `app/employer/job-form.tsx`, `app/jobs/[slug]/apply/*`, `lib/email.ts`.            |
 | Profiles backfill / apply FK fix            | Migration 011, `app/jobs/[slug]/apply/actions.ts` (profile upsert before insert application).                                                               |
+| Dashboard, documents, notifications         | `app/dashboard/page.tsx`, `app/dashboard/documents-panel.tsx`, `lib/notifications.ts`, migrations 012–014, `app/_components/header-nav.tsx` (dropdowns).     |
+| Cover letters, default CV/CL                | Migrations 013–014, `app/profile/actions.ts` (addCoverLetterToUser, setDefaultCv, setDefaultCoverLetter), `app/jobs/[slug]/apply/*`.                         |
 
 
 ---
@@ -631,3 +633,34 @@ Reference for what was implemented at each major step. Use this when debugging o
 - `lib/email.ts` (screeningAnswers in notification)
 
 **Notes:** Run migrations 010 and 011 in Supabase SQL Editor (or via CLI). Employer chooses question type only when adding (text / yes/no / multiple choice); type cannot be changed afterward and is not displayed in the form. Answers delivered to employer via email only in V1; DB stores them for future dashboard use.
+
+---
+
+## Dashboard, Documents, Cover Letters, Navbar, Apply UX
+
+**What was done:**
+
+- **Job seeker dashboard:** `app/dashboard/page.tsx` – "Your desktop" home with stat cards (Saved searches, Saved jobs, Add CV), last chance jobs, application status, offers tailored to you. Sidebar panels: Your desktop, Offers tailored to you, My applications, Saved jobs, Saved searches, Documents, Notifications, Edit profile, Sign out (last). Panel state via `?panel=` query. Titles outside card, 2rem font, #202557.
+- **Documents panel:** CV and cover letter upload/delete; paragraph below title; "Set as default" for CVs and cover letters. Migration `014_default_cv_cover_letter.sql` – `is_default` on `user_cvs` and `user_cover_letters`; UPDATE RLS policies.
+- **Notifications:** Migration `012_notifications.sql` – `notifications` table, `notify_job_alert()` trigger when jobs match saved searches. `lib/notifications.ts`, `app/notifications/actions.ts`. Bell icon in navbar with dropdown (unread count, mark read, view all). `app/employer/actions.ts` calls `notifyJobAlert` on create/update job.
+- **Cover letters:** Migration `013_user_cover_letters.sql` – `user_cover_letters` table. `lib/storage.ts` – `uploadCoverLetter()`. `app/profile/actions.ts` – `addCoverLetterToUser`, `deleteCoverLetterFromUser`, `setDefaultCv`, `setDefaultCoverLetter`.
+- **Apply form cover letter:** Select from saved cover letters or upload for this application only. `cover_letter_path` and `cover_letter_file` in apply action; `cover_letter_url` stored in applications; employer email includes cover letter download link.
+- **Navbar:** RemoteHippo logo (`public/logo.png`) instead of text. Account dropdown: profile/email header, links (Your desktop, Offers tailored to you, My applications, Saved, Documents, CV Creator, Notifications), Sign out. Primary Account button. Heart dropdown: saved jobs list with Apply buttons, View all. Links #202557; heart outlined.
+- **Sign out:** Moved from Edit profile to dashboard sidebar (last item). `app/dashboard/sign-out-link.tsx`.
+- **Edit profile:** CV/Resume section removed; documents managed in Documents panel only.
+- **Your desktop cards:** Saved searches, Saved jobs (heart icon), Add CV (shows CV count) – all clickable, link to respective panels.
+
+**Key files:**
+
+- `app/dashboard/page.tsx` – dashboard layout, panels, home content
+- `app/dashboard/documents-panel.tsx` – CV/cover letter UI, set default
+- `app/dashboard/sign-out-link.tsx` – sidebar sign out
+- `app/_components/header.tsx` – logo, Jobs/Blog links, passes savedJobs
+- `app/_components/header-nav.tsx` – account dropdown, heart dropdown, notifications dropdown
+- `lib/notifications.ts`, `lib/dashboard.ts` (getTailoredJobs)
+- `supabase/migrations/012_notifications.sql`, `013_user_cover_letters.sql`, `014_default_cv_cover_letter.sql`
+- `app/jobs/[slug]/apply/application-form.tsx` – cover letter selection/upload
+- `app/jobs/[slug]/apply/actions.ts` – cover letter path/file handling
+- `lib/email.ts` – coverLetterDownloadUrl in notification
+
+**Notes:** Run migrations 012, 013, 014 in Supabase. Notifications require employer job create/update to trigger. Default CV/cover letter used when applying (first by is_default, else first by created_at).

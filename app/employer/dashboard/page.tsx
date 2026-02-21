@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getEmployerJobs } from "@/lib/jobs";
@@ -31,17 +32,20 @@ export default async function EmployerDashboardPage() {
   const jobs = await getEmployerJobs(user.id);
 
   return (
-    <main className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div>
+          <div className="rounded-3xl border border-border/80 bg-card/95 p-5 shadow-sm">
             <Link
               href="/"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              ← Back to home
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Back to home
             </Link>
-            <h1 className="text-2xl font-semibold mt-1">Employer dashboard</h1>
+            <h1 className="mt-1 text-2xl font-semibold text-heading">
+              Employer dashboard
+            </h1>
             <p className="text-muted-foreground text-sm">
               Manage your job listings. Only active jobs appear on the public
               board.
@@ -54,7 +58,7 @@ export default async function EmployerDashboardPage() {
 
         <section className="space-y-4">
           {jobs.length === 0 ? (
-            <Card>
+            <Card className="rounded-3xl border border-dashed border-border/80 bg-card shadow-sm">
               <CardContent className="py-12 text-center text-muted-foreground">
                 <p className="font-medium">No jobs yet</p>
                 <p className="mt-1 text-sm">
@@ -69,7 +73,7 @@ export default async function EmployerDashboardPage() {
             <ul className="space-y-3">
               {jobs.map((job) => (
                 <li key={job.id}>
-                  <Card className="transition-colors hover:bg-muted/30">
+                  <Card className="rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm">
                     <CardHeader className="pb-2">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>

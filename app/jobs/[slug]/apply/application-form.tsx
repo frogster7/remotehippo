@@ -26,6 +26,12 @@ export type SavedCvOption = {
   downloadUrl: string | null;
 };
 
+export type SavedCoverLetterOption = {
+  id: string;
+  storage_path: string;
+  fileName: string;
+};
+
 type ApplicationFormProps = {
   job: Job;
   slug: string;
@@ -35,6 +41,7 @@ type ApplicationFormProps = {
   prefilledPhone: string;
   hasCv: boolean;
   savedCvs: SavedCvOption[];
+  savedCoverLetters: SavedCoverLetterOption[];
 };
 
 const CV_ACCEPT = ".pdf,.doc,.docx";
@@ -48,10 +55,12 @@ export function ApplicationForm({
   prefilledPhone,
   hasCv,
   savedCvs,
+  savedCoverLetters = [],
 }: ApplicationFormProps) {
   const router = useRouter();
   const screeningQuestions = job.screening_questions ?? [];
   const cvInputRef = useRef<HTMLInputElement>(null);
+  const coverLetterInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(prefilledName);
   const [lastName, setLastName] = useState(prefilledLastName);
   const [email, setEmail] = useState(prefilledEmail);
@@ -61,6 +70,10 @@ export function ApplicationForm({
     savedCvs[0]?.storage_path ?? null
   );
   const [attachFile, setAttachFile] = useState<File | null>(null);
+  const [selectedCoverLetterPath, setSelectedCoverLetterPath] = useState<string | null>(
+    savedCoverLetters[0]?.storage_path ?? null
+  );
+  const [attachCoverLetterFile, setAttachCoverLetterFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -114,6 +127,11 @@ export function ApplicationForm({
     formData.set("applicant_email", email.trim());
     formData.set("applicant_phone", phone.trim());
     formData.set("cover_letter_text", coverLetter.trim());
+    if (attachCoverLetterFile) {
+      formData.set("cover_letter_file", attachCoverLetterFile);
+    } else if (selectedCoverLetterPath) {
+      formData.set("cover_letter_path", selectedCoverLetterPath);
+    }
     if (attachFile) {
       formData.set("cv_file", attachFile);
     } else if (selectedCvPath) {
@@ -133,6 +151,19 @@ export function ApplicationForm({
     setEmailError(result.emailError ?? null);
     setSuccess(true);
     router.refresh();
+  }
+
+  function handleCoverLetterFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!isAllowedCvFileName(file.name)) {
+      setError(`Cover letter: allowed formats ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
+      return;
+    }
+    setError(null);
+    setAttachCoverLetterFile(file);
+    setSelectedCoverLetterPath(null);
   }
 
   function handleCvFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -225,7 +256,7 @@ export function ApplicationForm({
 
   if (success) {
     return (
-      <Card>
+      <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
         <CardHeader>
           <CardTitle>Application sent</CardTitle>
           <CardDescription>
@@ -247,7 +278,7 @@ export function ApplicationForm({
   }
 
   return (
-    <Card>
+    <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
       <CardHeader>
         <div className="flex items-center gap-3">
           {job.employer?.company_logo_url ? (
@@ -406,13 +437,83 @@ export function ApplicationForm({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cover_letter">Cover letter (optional)</Label>
+            <Label>Cover letter (optional)</Label>
+            <p className="text-sm text-muted-foreground">
+              Add a cover letter from your documents or upload one for this application.
+            </p>
+            {savedCoverLetters.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">From documents</p>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50">
+                    <input
+                      type="radio"
+                      name="cover_letter_choice"
+                      value=""
+                      checked={!selectedCoverLetterPath && !attachCoverLetterFile}
+                      onChange={() => {
+                        setSelectedCoverLetterPath(null);
+                        setAttachCoverLetterFile(null);
+                      }}
+                      disabled={loading}
+                      className="rounded-full border-input"
+                    />
+                    <span className="text-sm">No cover letter</span>
+                  </label>
+                  {savedCoverLetters.map((cl) => (
+                    <label
+                      key={cl.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 has-[:checked]:bg-muted/50"
+                    >
+                      <input
+                        type="radio"
+                        name="cover_letter_choice"
+                        value={cl.storage_path}
+                        checked={!attachCoverLetterFile && selectedCoverLetterPath === cl.storage_path}
+                        onChange={() => {
+                          setSelectedCoverLetterPath(cl.storage_path);
+                          setAttachCoverLetterFile(null);
+                        }}
+                        disabled={loading}
+                        className="rounded-full border-input"
+                      />
+                      <span className="text-sm truncate flex-1">{cl.fileName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {savedCoverLetters.length > 0 ? "Or upload for this application only" : "Upload a cover letter"}
+              </p>
+              <input
+                ref={coverLetterInputRef}
+                type="file"
+                accept={CV_ACCEPT}
+                className="hidden"
+                onChange={handleCoverLetterFileChange}
+                disabled={loading}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => coverLetterInputRef.current?.click()}
+                disabled={loading}
+              >
+                {attachCoverLetterFile ? attachCoverLetterFile.name : "Choose file"}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cover_letter">Cover letter message (optional)</Label>
             <Textarea
               id="cover_letter"
               value={coverLetter}
               onChange={(e) => setCoverLetter(e.target.value)}
-              placeholder="Introduce yourself and why you're interested..."
-              rows={5}
+              placeholder="Add a short message or introduction..."
+              rows={3}
               disabled={loading}
               className="resize-none"
             />

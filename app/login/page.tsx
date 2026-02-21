@@ -12,10 +12,10 @@ type Props = { searchParams: Promise<{ next?: string }> };
 export default async function LoginPage({ searchParams }: Props) {
   const { next } = await searchParams;
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background via-background to-muted/20 p-6">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Log in</h1>
+        <div className="space-y-2 rounded-3xl border border-border/80 bg-card/95 p-6 text-center shadow-sm">
+          <h1 className="text-2xl font-semibold text-heading">Log in</h1>
           <p className="text-muted-foreground text-sm">
             Don’t have an account?{" "}
             <Link href="/register" className="text-primary underline">

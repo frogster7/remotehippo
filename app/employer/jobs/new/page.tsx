@@ -26,21 +26,21 @@ export default async function NewJobPage() {
   if (profile?.role !== "employer") redirect("/profile");
 
   return (
-    <main className="min-h-screen bg-form-page">
-      <div className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="container mx-auto max-w-4xl px-4 py-10 sm:px-6">
         <Link
           href="/employer/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to dashboard
         </Link>
 
-        <header className="mt-8 mb-10">
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
+        <header className="mb-10 mt-8 rounded-3xl border border-border/80 bg-card/95 p-6 shadow-sm">
+          <h1 className="text-2xl font-semibold tracking-tight text-heading sm:text-3xl">
             New job listing
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm sm:text-base max-w-xl">
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
             Fill in the details below. You can save as draft and publish when
             you’re ready.
           </p>

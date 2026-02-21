@@ -54,7 +54,7 @@ export function UserRegisterForm() {
 
   if (success) {
     return (
-      <Card>
+      <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
         <CardHeader>
           <CardTitle>Check your email</CardTitle>
           <CardDescription>
@@ -67,7 +67,7 @@ export function UserRegisterForm() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
       <CardHeader>
         <CardTitle>Create your account</CardTitle>
         <CardDescription>

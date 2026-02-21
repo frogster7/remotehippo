@@ -191,6 +191,21 @@ export interface SavedSearch {
   created_at: string;
 }
 
+/** Notification (e.g. job_alert when a job matches a saved search). */
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  payload: {
+    job_id?: string;
+    job_slug?: string;
+    job_title?: string;
+    saved_search_name?: string;
+  };
+  read_at: string | null;
+  created_at: string;
+}
+
 export const WORK_TYPES: { value: WorkType; label: string }[] = [
   { value: "remote", label: "Remote" },
   { value: "hybrid", label: "Hybrid" },

@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function RegisterCompanyPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background via-background to-muted/20 p-6">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Sign up as Company</h1>
+        <div className="space-y-2 rounded-3xl border border-border/80 bg-card/95 p-6 text-center shadow-sm">
+          <h1 className="text-2xl font-semibold text-heading">Sign up as Company</h1>
           <p className="text-muted-foreground text-sm">
             Already have an account?{" "}
             <Link href="/login" className="text-primary underline">

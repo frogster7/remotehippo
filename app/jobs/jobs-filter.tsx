@@ -240,7 +240,7 @@ export function JobsFilter({
   const horizontalBar = (
     <div className="space-y-3">
       {/* Search bar + filters */}
-      <div className="overflow-hidden rounded-xl border border-primary/100 bg-[#fdfdfc]">
+      <div className="overflow-hidden rounded-2xl border border-primary/50 bg-card shadow-sm">
         <form
           className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-0 sm:p-4"
           onSubmit={(e) => {
@@ -317,7 +317,7 @@ export function JobsFilter({
             variant="outline"
             size="icon"
             className={cn(
-              "h-11 w-11 shrink-0 rounded-xl transition-colors duration-200 sm:ml-2",
+              "h-11 w-11 shrink-0 rounded-xl border-border/80 bg-background transition-colors duration-200 sm:ml-2",
               filtersOpen && "bg-primary/10 border-primary/30",
             )}
             onClick={() => {
@@ -338,7 +338,7 @@ export function JobsFilter({
           <Button
             type="submit"
             size="lg"
-            className="h-11 gap-2 rounded-xl px-6 font-semibold sm:ml-2"
+            className="h-11 gap-2 rounded-xl px-6 font-semibold shadow-sm sm:ml-2"
           >
             <Search className="h-5 w-5" aria-hidden />
             Search jobs
@@ -353,7 +353,7 @@ export function JobsFilter({
           )}
         >
           <div className="min-h-0 overflow-hidden">
-            <div className="border-t border-border/50 p-5 sm:p-6">
+            <div className="border-t border-border/50 bg-muted/20 p-5 sm:p-6">
               <div className="space-y-5">
                 <div>
                   <p className="text-sm font-medium text-foreground">
@@ -385,10 +385,10 @@ export function JobsFilter({
                             }));
                           }}
                           className={cn(
-                            "rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
+                            "rounded-full px-3 py-1.5 text-sm font-medium transition-all",
                             isSelected
                               ? "bg-primary text-primary-foreground shadow-sm"
-                              : "bg-muted text-muted-foreground hover:bg-primary/15 hover:text-primary",
+                              : "border border-border/70 bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
                           )}
                         >
                           {r}
@@ -446,10 +446,10 @@ export function JobsFilter({
                             }));
                           }}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
+                            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all",
                             isSelected
                               ? "bg-primary text-primary-foreground shadow-sm"
-                              : "bg-muted text-muted-foreground hover:bg-primary/15 hover:text-primary",
+                              : "border border-border/70 bg-background text-muted-foreground hover:border-primary/30 hover:bg-primary/10 hover:text-primary",
                           )}
                         >
                           {iconUrl ? (
@@ -592,7 +592,7 @@ export function JobsFilter({
                   <Button
                     type="button"
                     size="lg"
-                    className="rounded-xl px-8 font-semibold"
+                    className="rounded-xl px-8 font-semibold shadow-sm"
                     onClick={applyPendingFilters}
                   >
                     Apply filters
@@ -606,11 +606,11 @@ export function JobsFilter({
 
         {/* Active filters pills + Save search – outside collapsible, hidden when empty */}
         {activeFilters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-primary/100 px-4 pb-3 pt-3">
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-background/70 px-4 pb-3 pt-3">
             {activeFilters.map(({ key, label, value }) => (
               <span
                 key={value !== undefined ? `${key}:${value}` : key}
-                className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
               >
                 {label}
                 <button

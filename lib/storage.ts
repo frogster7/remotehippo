@@ -64,6 +64,13 @@ function makePath(userId: string, file: File): string {
   return `${userId}/${unique}`;
 }
 
+/** Cover letter path: {userId}/cover-letters/{timestamp}-{filename} */
+function makeCoverLetterPath(userId: string, file: File): string {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const unique = `${Date.now()}-${safeName}`;
+  return `${userId}/cover-letters/${unique}`;
+}
+
 /**
  * Upload a CV to user-cvs bucket. Returns the path to store in profile (private bucket).
  * Caller must be authenticated as userId.
@@ -84,6 +91,33 @@ export async function uploadCv(
   }
 
   const path = makePath(userId, file);
+  const { error } = await supabase.storage.from(CV_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+  });
+  if (error) return { path: "", error: error.message };
+  return { path, error: null };
+}
+
+/**
+ * Upload a cover letter to user-cvs bucket (subfolder cover-letters).
+ * Same validation as CVs: PDF, DOC, DOCX, max 10 MB.
+ */
+export async function uploadCoverLetter(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File
+): Promise<{ path: string; error: string | null }> {
+  if (file.size > CV_MAX_BYTES) {
+    return { path: "", error: "File must be 10 MB or smaller." };
+  }
+  if (!isAllowedCvType(file.type)) {
+    return {
+      path: "",
+      error: "Only PDF, DOC, and DOCX files are allowed.",
+    };
+  }
+  const path = makeCoverLetterPath(userId, file);
   const { error } = await supabase.storage.from(CV_BUCKET).upload(path, file, {
     cacheControl: "3600",
     upsert: true,

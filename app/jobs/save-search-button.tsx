@@ -48,7 +48,11 @@ export function SaveSearchButton({ filters }: { filters: JobFilters }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 rounded-xl border-border/80 bg-card/95"
+        >
           <BookmarkPlus className="h-4 w-4" />
           Save this search
         </Button>

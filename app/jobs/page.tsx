@@ -81,26 +81,36 @@ export default async function JobsPage({
   ]);
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-[1100px] px-4 pb-12">
-        {/* Hero section */}
-        <section className="relative overflow-hidden rounded-b-2xl pb-3 pt-6">
-          <div className="pt-0 pb-2">
-            <h1 className="font-heading text-2xl font-bold tracking-tight text-heading sm:text-3xl md:text-4xl">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="mx-auto max-w-[1140px] px-4 pb-14 pt-6 sm:pt-8">
+        <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card px-6 py-7 shadow-sm sm:px-8">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_55%)]"
+            aria-hidden
+          />
+          <div className="relative">
+            <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              Curated tech roles
+            </div>
+            <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight text-heading sm:text-3xl md:text-4xl">
               Find your next role.
             </h1>
-            <p className="mt-2 text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {jobCount.toLocaleString()}
-              </span>{" "}
-              {jobCount === 1 ? "job" : "jobs"} from companies that value remote
-              and hybrid work.
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+              Discover hand-picked opportunities from teams hiring for remote
+              and hybrid engineering work.
             </p>
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-background px-3 py-1.5 font-medium text-foreground">
+                {jobCount.toLocaleString()} {jobCount === 1 ? "job" : "jobs"}
+              </span>
+              <span className="inline-flex items-center rounded-full border border-border/80 bg-background px-3 py-1.5 text-muted-foreground">
+                Updated daily
+              </span>
+            </div>
           </div>
         </section>
 
-        {/* Sticky search + filters – sticks at very top when scrolled */}
-        <div className="sticky top-0 z-20 -mt-1 bg-white pt-3">
+        <div className="sticky top-0 z-20 mt-4 bg-background/90 pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/75">
           <Suspense
             fallback={
               <div className="h-24 animate-pulse rounded-2xl border border-border/80 bg-card" />
@@ -115,17 +125,13 @@ export default async function JobsPage({
           </Suspense>
         </div>
 
-        {/* Job list */}
-        <section className="pt-6">
+        <section className="pt-7">
           {jobs.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border/80 bg-card p-12 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                <Briefcase
-                  className="h-7 w-7 text-muted-foreground"
-                  aria-hidden
-                />
+            <div className="rounded-3xl border border-dashed border-border/80 bg-card p-12 text-center shadow-sm">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                <Briefcase className="h-7 w-7 text-primary" aria-hidden />
               </div>
-              <p className="mt-4 font-heading font-semibold text-heading">
+              <p className="mt-4 font-heading text-lg font-semibold text-heading">
                 No jobs match your filters
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -134,11 +140,13 @@ export default async function JobsPage({
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-                <span className="font-medium text-foreground">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm font-medium text-foreground">
                   {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
                 </span>
-                <span className="text-muted-foreground">Sorted by newest</span>
+                <span className="rounded-full border border-border/80 bg-card px-3 py-1 text-xs text-muted-foreground">
+                  Sorted by newest
+                </span>
               </div>
               <ul className="space-y-4">
                 {jobs.map((job) => (

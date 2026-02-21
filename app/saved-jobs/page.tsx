@@ -35,10 +35,12 @@ export default async function SavedJobsPage() {
   const jobs = await getFavoritedJobs(user.id);
 
   return (
-    <main className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Saved Jobs</h1>
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-6 rounded-3xl border border-border/70 bg-card p-6 shadow-sm">
+          <h1 className="text-3xl font-semibold tracking-tight text-heading">
+            Saved Jobs
+          </h1>
           <p className="mt-2 text-muted-foreground">
             {jobs.length === 0
               ? "You haven't saved any jobs yet."
@@ -47,9 +49,12 @@ export default async function SavedJobsPage() {
         </div>
 
         {jobs.length === 0 ? (
-          <Card>
+          <Card className="rounded-3xl border border-dashed border-border/80 bg-card shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/60" aria-hidden />
+              <Briefcase
+                className="mx-auto h-12 w-12 text-primary/70"
+                aria-hidden
+              />
               <p className="text-muted-foreground mt-4 mb-4">
                 Browse jobs and click the heart icon to save them for later.
               </p>
@@ -69,22 +74,27 @@ export default async function SavedJobsPage() {
               const salaryStr = formatSalary(job.salary_min, job.salary_max);
 
               return (
-                <Card key={job.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={job.id}
+                  className="rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       {/* Company logo */}
                       <div className="flex-shrink-0">
                         {job.employer?.company_logo_url ? (
-                          <Image
-                            src={job.employer.company_logo_url}
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="rounded object-cover"
-                            unoptimized
-                          />
+                          <div className="rounded-xl border border-border/70 bg-background p-1.5">
+                            <Image
+                              src={job.employer.company_logo_url}
+                              alt=""
+                              width={48}
+                              height={48}
+                              className="rounded object-cover"
+                              unoptimized
+                            />
+                          </div>
                         ) : (
-                          <div className="h-12 w-12 rounded bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border/70 bg-muted text-sm font-medium text-muted-foreground">
                             {companyName.slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -96,7 +106,7 @@ export default async function SavedJobsPage() {
                           <div className="flex-1">
                             <Link
                               href={`/jobs/${job.slug}`}
-                              className="text-lg font-semibold hover:underline"
+                              className="text-lg font-semibold text-heading hover:underline"
                             >
                               {job.title}
                             </Link>
@@ -113,24 +123,27 @@ export default async function SavedJobsPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2 mt-3">
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs rounded-full">
                             {job.work_type}
                           </Badge>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs rounded-full">
                             {job.job_type}
                           </Badge>
                           {job.role && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs rounded-full">
                               {job.role}
                             </Badge>
                           )}
                           {salaryStr && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge
+                              variant="outline"
+                              className="rounded-full border-[hsl(var(--salary)/0.35)] bg-[hsl(var(--salary)/0.1)] text-xs text-[hsl(var(--salary))]"
+                            >
                               {salaryStr}
                             </Badge>
                           )}
                           {job.location && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs rounded-full">
                               {job.location}
                             </Badge>
                           )}

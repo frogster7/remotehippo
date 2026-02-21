@@ -3,19 +3,14 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import type { ApplicationPreference, Profile } from "@/lib/types";
 import { APPLICATION_PREFERENCES } from "@/lib/types";
 import {
-  CV_ALLOWED_EXTENSIONS,
-  isAllowedCvFileName,
   isAllowedLogoFileName,
   LOGO_ALLOWED_EXTENSIONS,
 } from "@/lib/storage";
 import {
   updateProfile,
-  addCvToUserCvs,
-  deleteCvFromUserCvs,
   uploadLogoAndUpdateProfile,
   deleteLogoAndUpdateProfile,
   type ProfileUpdateData,
@@ -38,28 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileUp, Trash2, Building2, User } from "lucide-react";
-
-const CV_ACCEPT = ".pdf,.doc,.docx";
+import { Building2, User } from "lucide-react";
 const LOGO_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
-export type CvWithUrl = {
-  id: string;
-  storage_path: string;
-  display_name: string | null;
-  downloadUrl: string | null;
-  fileName: string;
-};
-
-export function ProfileForm({
-  profile,
-  cvs,
-}: {
-  profile: Profile;
-  cvs: CvWithUrl[];
-}) {
+export function ProfileForm({ profile }: { profile: Profile }) {
   const router = useRouter();
-  const cvInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState(profile.full_name ?? "");
@@ -83,7 +61,6 @@ export function ProfileForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cvLoading, setCvLoading] = useState(false);
   const [logoLoading, setLogoLoading] = useState(false);
 
   const updateData = (): ProfileUpdateData => ({
@@ -113,39 +90,6 @@ export function ProfileForm({
       return;
     }
     setSaved(true);
-    router.refresh();
-  }
-
-  async function handleCvChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!isAllowedCvFileName(file.name)) {
-      setError(`Allowed formats: ${CV_ALLOWED_EXTENSIONS.join(", ")}`);
-      return;
-    }
-    setError(null);
-    setCvLoading(true);
-    const formData = new FormData();
-    formData.set("file", file);
-    const result = await addCvToUserCvs(formData);
-    setCvLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    if (cvInputRef.current) cvInputRef.current.value = "";
-    router.refresh();
-  }
-
-  async function handleDeleteCv(cvId: string) {
-    setError(null);
-    setCvLoading(true);
-    const result = await deleteCvFromUserCvs(cvId);
-    setCvLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
     router.refresh();
   }
 
@@ -182,25 +126,18 @@ export function ProfileForm({
     router.refresh();
   }
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  }
-
   const hasLogo = !!profile.company_logo_url;
-  const maxCvsReached = cvs.length >= 3;
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Account
           </CardTitle>
           <CardDescription>
-            Your name and role. Job seekers can add a CV; employers can add company details below.
+            Your name and contact info. Employers can add company details below.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -337,78 +274,8 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
-      {role === "job_seeker" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileUp className="h-5 w-5" />
-              CV / Resume
-            </CardTitle>
-            <CardDescription>
-              Upload up to 3 CVs (PDF, DOC, or DOCX, max 10 MB each). Used when you apply to jobs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {cvs.length > 0 && (
-              <ul className="space-y-2">
-                {cvs.map((cv) => (
-                  <li
-                    key={cv.id}
-                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <span className="text-sm font-medium truncate max-w-[200px]">
-                      {cv.fileName}
-                    </span>
-                    {cv.downloadUrl && (
-                      <a
-                        href={cv.downloadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Download
-                      </a>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteCv(cv.id)}
-                      disabled={cvLoading}
-                      className="ml-auto text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!maxCvsReached && (
-              <div>
-                <input
-                  ref={cvInputRef}
-                  type="file"
-                  accept={CV_ACCEPT}
-                  className="hidden"
-                  onChange={handleCvChange}
-                  disabled={cvLoading}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => cvInputRef.current?.click()}
-                  disabled={cvLoading}
-                >
-                  {cvLoading ? "Uploading…" : "Add CV"}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {role === "employer" && (
-        <Card>
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -483,19 +350,6 @@ export function ProfileForm({
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sign out</CardTitle>
-          <CardDescription>
-            Log out of your account on this device.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={handleSignOut}>
-            Sign out
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

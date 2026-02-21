@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { generateJobSlug } from "@/lib/jobs";
+import { notifyJobAlert } from "@/lib/notifications";
 import type { JobFormData } from "@/lib/types";
 
 async function ensureEmployer() {
@@ -29,30 +30,37 @@ export async function createJob(form: JobFormData): Promise<{ error?: string }> 
   if (!form.summary?.trim()) return { error: "Summary is required." };
   const { supabase, userId } = await ensureEmployer();
   const slug = generateJobSlug(form.title.trim() || "job");
-  const { error } = await supabase.from("jobs").insert({
-    employer_id: userId,
-    title: form.title.trim() || "Untitled",
-    slug,
-    description: form.description.trim() || "",
-    role: form.role.trim() || "Developer",
-    work_type: form.work_type,
-    job_type: form.job_type,
-    tech_stack: form.tech_stack?.filter(Boolean) ?? [],
-    salary_min: form.salary_min && form.salary_min > 0 ? form.salary_min : null,
-    salary_max: form.salary_max && form.salary_max > 0 ? form.salary_max : null,
-    location: form.location?.trim() || null,
-    is_active: form.is_active,
-    application_email: form.application_email?.trim() || null,
-    application_url: form.application_url?.trim() || null,
-    summary: form.summary?.trim() || null,
-    responsibilities: form.responsibilities?.trim() || null,
-    requirements: form.requirements?.trim() || null,
-    what_we_offer: form.what_we_offer?.trim() || null,
-    good_to_have: form.good_to_have?.trim() || null,
-    benefits: form.benefits?.trim() || null,
-    screening_questions: form.screening_questions ?? [],
-  });
+  const { data: inserted, error } = await supabase
+    .from("jobs")
+    .insert({
+      employer_id: userId,
+      title: form.title.trim() || "Untitled",
+      slug,
+      description: form.description.trim() || "",
+      role: form.role.trim() || "Developer",
+      work_type: form.work_type,
+      job_type: form.job_type,
+      tech_stack: form.tech_stack?.filter(Boolean) ?? [],
+      salary_min: form.salary_min && form.salary_min > 0 ? form.salary_min : null,
+      salary_max: form.salary_max && form.salary_max > 0 ? form.salary_max : null,
+      location: form.location?.trim() || null,
+      is_active: form.is_active,
+      application_email: form.application_email?.trim() || null,
+      application_url: form.application_url?.trim() || null,
+      summary: form.summary?.trim() || null,
+      responsibilities: form.responsibilities?.trim() || null,
+      requirements: form.requirements?.trim() || null,
+      what_we_offer: form.what_we_offer?.trim() || null,
+      good_to_have: form.good_to_have?.trim() || null,
+      benefits: form.benefits?.trim() || null,
+      screening_questions: form.screening_questions ?? [],
+    })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+  if (form.is_active && inserted?.id) {
+    await notifyJobAlert(inserted.id);
+  }
   revalidatePath("/employer/dashboard");
   revalidatePath("/jobs");
   redirect("/employer/dashboard");
@@ -66,9 +74,10 @@ export async function updateJob(
   const { supabase } = await ensureEmployer();
   const { data: job } = await supabase
     .from("jobs")
-    .select("slug")
+    .select("slug, is_active")
     .eq("id", jobId)
     .single();
+  const wasActive = job?.is_active ?? false;
   const { error } = await supabase
     .from("jobs")
     .update({
@@ -94,6 +103,9 @@ export async function updateJob(
     })
     .eq("id", jobId);
   if (error) return { error: error.message };
+  if (form.is_active && !wasActive) {
+    await notifyJobAlert(jobId);
+  }
   revalidatePath("/employer/dashboard");
   revalidatePath("/jobs");
   if (job?.slug) revalidatePath(`/jobs/${job.slug}`);

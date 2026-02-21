@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getJobBySlug } from "@/lib/jobs";
-import { createSignedCvUrl, uploadCv } from "@/lib/storage";
+import { createSignedCvUrl, uploadCv, uploadCoverLetter } from "@/lib/storage";
 import { sendApplicationNotification } from "@/lib/email";
 import type { ScreeningAnswer } from "@/lib/types";
 
@@ -157,6 +157,30 @@ export async function submitApplication(
     return { error: "Please choose a saved CV or upload a file for this application." };
   }
 
+  const coverLetterPath = formData.get("cover_letter_path") ? String(formData.get("cover_letter_path")).trim() : null;
+  const coverLetterFile = formData.get("cover_letter_file") as File | null;
+  let coverLetterStoragePath: string | null = null;
+
+  if (coverLetterFile?.size && coverLetterFile.size > 0) {
+    const { path, error: uploadError } = await uploadCoverLetter(supabase, user.id, coverLetterFile);
+    if (uploadError) return { error: uploadError };
+    coverLetterStoragePath = path;
+  } else if (coverLetterPath) {
+    const { data: row } = await supabase
+      .from("user_cover_letters")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .eq("storage_path", coverLetterPath)
+      .single();
+    if (row) coverLetterStoragePath = row.storage_path;
+  }
+
+  let coverLetterDownloadUrl: string | null = null;
+  if (coverLetterStoragePath) {
+    const { url, error: urlErr } = await createSignedCvUrl(supabase, coverLetterStoragePath, 24 * 3600);
+    if (!urlErr) coverLetterDownloadUrl = url;
+  }
+
   const { data: existing } = await supabase
     .from("applications")
     .select("id")
@@ -185,6 +209,7 @@ export async function submitApplication(
     applicant_phone: phone || "",
     cv_url: cvPath,
     cover_letter_text: coverLetterText,
+    cover_letter_url: coverLetterStoragePath,
     screening_answers: normalizedScreeningAnswers,
     status: "pending",
   });
@@ -202,6 +227,7 @@ export async function submitApplication(
     applicantEmail: email,
     applicantPhone: phone,
     coverLetter: coverLetterText,
+    coverLetterDownloadUrl: coverLetterDownloadUrl,
     cvDownloadUrl: cvDownloadUrl || null,
     screeningAnswers: normalizedScreeningAnswers,
   });

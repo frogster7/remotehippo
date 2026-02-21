@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import {
   getEmployerPublicProfile,
@@ -57,29 +58,32 @@ export default async function EmployerPublicPage({ params }: Props) {
     profile.company_name?.trim() || profile.full_name?.trim() || "Company";
 
   return (
-    <main className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <Link
           href="/jobs"
-          className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-block"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          ← Back to jobs
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to jobs
         </Link>
 
-        <Card>
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-4">
               {profile.company_logo_url ? (
-                <Image
-                  src={profile.company_logo_url}
-                  alt=""
-                  width={64}
-                  height={64}
-                  className="rounded-lg object-cover"
-                  unoptimized
-                />
+                <div className="rounded-2xl border border-border/70 bg-background p-2">
+                  <Image
+                    src={profile.company_logo_url}
+                    alt=""
+                    width={64}
+                    height={64}
+                    className="rounded-lg object-cover"
+                    unoptimized
+                  />
+                </div>
               ) : (
-                <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center text-xl font-semibold text-muted-foreground">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/70 bg-muted text-xl font-semibold text-muted-foreground">
                   {companyName.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -103,11 +107,11 @@ export default async function EmployerPublicPage({ params }: Props) {
         </Card>
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold mb-4">
+          <h2 className="mb-4 text-lg font-semibold text-heading">
             Open positions ({jobs.length})
           </h2>
           {jobs.length === 0 ? (
-            <Card>
+            <Card className="rounded-3xl border border-dashed border-border/80 bg-card shadow-sm">
               <CardContent className="py-8 text-center text-muted-foreground">
                 <p>No open positions right now.</p>
                 <Link href="/jobs" className="text-primary hover:underline mt-2 inline-block">

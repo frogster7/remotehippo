@@ -12,6 +12,7 @@ export type ApplicationEmailParams = {
   applicantEmail: string;
   applicantPhone: string;
   coverLetter: string | null;
+  coverLetterDownloadUrl?: string | null;
   cvDownloadUrl: string | null;
   screeningAnswers: {
     question_prompt: string;
@@ -44,6 +45,7 @@ export async function sendApplicationNotification(
     applicantEmail,
     applicantPhone,
     coverLetter,
+    coverLetterDownloadUrl,
     cvDownloadUrl,
     screeningAnswers,
   } = params;
@@ -59,7 +61,10 @@ export async function sendApplicationNotification(
     "",
   ];
   if (coverLetter?.trim()) {
-    lines.push("Cover letter:", coverLetter.trim(), "");
+    lines.push("Cover letter (text):", coverLetter.trim(), "");
+  }
+  if (coverLetterDownloadUrl) {
+    lines.push("Cover letter (attachment, download link, expires in 24h):", coverLetterDownloadUrl, "");
   }
   if (screeningAnswers.length > 0) {
     lines.push("Screening answers:");

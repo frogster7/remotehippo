@@ -47,6 +47,14 @@ export default async function ApplyPage({ params }: Props) {
     .from("user_cvs")
     .select("id, storage_path, created_at")
     .eq("user_id", user.id)
+    .order("is_default", { ascending: false })
+    .order("created_at", { ascending: true });
+
+  const { data: coverLettersRows } = await supabase
+    .from("user_cover_letters")
+    .select("id, storage_path, created_at")
+    .eq("user_id", user.id)
+    .order("is_default", { ascending: false })
     .order("created_at", { ascending: true });
 
   const savedCvs =
@@ -62,6 +70,13 @@ export default async function ApplyPage({ params }: Props) {
       })
     )) ?? [];
 
+  const savedCoverLetters =
+    (coverLettersRows ?? []).map((row) => ({
+      id: row.id,
+      storage_path: row.storage_path,
+      fileName: getCvFileName(row.storage_path),
+    }));
+
   const hasCv = savedCvs.length > 0;
 
   const prefilledName = profile?.full_name?.trim() ?? "";
@@ -73,7 +88,7 @@ export default async function ApplyPage({ params }: Props) {
     job.employer?.company_name ?? job.employer?.full_name ?? "Company";
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-muted/50 to-muted/30">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       <div className="mx-auto w-full max-w-[600px] px-4 py-6 sm:px-6">
         <Link
           href={`/jobs/${slug}`}
@@ -82,8 +97,8 @@ export default async function ApplyPage({ params }: Props) {
           <ArrowLeft className="h-4 w-4" aria-hidden />
           Back to job
         </Link>
-        <div className="mb-4">
-          <h1 className="text-xl font-semibold">
+        <div className="mb-4 rounded-3xl border border-border/80 bg-card/95 p-5 shadow-sm">
+          <h1 className="text-xl font-semibold text-heading">
             Apply for {job.title}
           </h1>
           <p className="text-sm text-muted-foreground">{companyName}</p>
@@ -97,6 +112,7 @@ export default async function ApplyPage({ params }: Props) {
           prefilledPhone={prefilledPhone}
           hasCv={hasCv}
           savedCvs={savedCvs}
+          savedCoverLetters={savedCoverLetters}
         />
       </div>
     </main>

@@ -38,7 +38,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   }
 
   return (
-    <Card>
+    <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>Use your email and password.</CardDescription>

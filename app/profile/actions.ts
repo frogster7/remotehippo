@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   uploadCv,
+  uploadCoverLetter,
   uploadLogo,
   deleteStorageFile,
   CV_BUCKET,
@@ -117,6 +118,115 @@ export async function deleteCvFromUserCvs(cvId: string): Promise<{
     .eq("user_id", user.id);
 
   return { error: deleteError?.message ?? null };
+}
+
+const MAX_COVER_LETTERS_PER_USER = 5;
+
+export async function addCoverLetterToUser(
+  formData: FormData
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { count } = await supabase
+    .from("user_cover_letters")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+  if ((count ?? 0) >= MAX_COVER_LETTERS_PER_USER) {
+    return { error: `You can have at most ${MAX_COVER_LETTERS_PER_USER} cover letters. Delete one to add another.` };
+  }
+
+  const file = formData.get("file") as File | null;
+  if (!file?.size) return { error: "No file provided." };
+
+  const { path, error: uploadError } = await uploadCoverLetter(
+    supabase,
+    user.id,
+    file
+  );
+  if (uploadError) return { error: uploadError };
+
+  const { error: insertError } = await supabase
+    .from("user_cover_letters")
+    .insert({ user_id: user.id, storage_path: path });
+
+  return { error: insertError?.message ?? null };
+}
+
+export async function deleteCoverLetterFromUser(
+  coverLetterId: string
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: row } = await supabase
+    .from("user_cover_letters")
+    .select("storage_path")
+    .eq("id", coverLetterId)
+    .eq("user_id", user.id)
+    .single();
+  if (!row) return { error: "Cover letter not found." };
+
+  const { error: delError } = await deleteStorageFile(
+    supabase,
+    CV_BUCKET,
+    row.storage_path
+  );
+  if (delError) return { error: delError };
+
+  const { error: deleteError } = await supabase
+    .from("user_cover_letters")
+    .delete()
+    .eq("id", coverLetterId)
+    .eq("user_id", user.id);
+
+  return { error: deleteError?.message ?? null };
+}
+
+export async function setDefaultCv(cvId: string): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: row } = await supabase
+    .from("user_cvs")
+    .select("id")
+    .eq("id", cvId)
+    .eq("user_id", user.id)
+    .single();
+  if (!row) return { error: "CV not found." };
+
+  await supabase.from("user_cvs").update({ is_default: false }).eq("user_id", user.id);
+  const { error } = await supabase.from("user_cvs").update({ is_default: true }).eq("id", cvId);
+  return { error: error?.message ?? null };
+}
+
+export async function setDefaultCoverLetter(clId: string): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: row } = await supabase
+    .from("user_cover_letters")
+    .select("id")
+    .eq("id", clId)
+    .eq("user_id", user.id)
+    .single();
+  if (!row) return { error: "Cover letter not found." };
+
+  await supabase.from("user_cover_letters").update({ is_default: false }).eq("user_id", user.id);
+  const { error } = await supabase.from("user_cover_letters").update({ is_default: true }).eq("id", clId);
+  return { error: error?.message ?? null };
 }
 
 /** Extract storage path from company logo public URL (for delete). */

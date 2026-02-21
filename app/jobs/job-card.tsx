@@ -79,14 +79,14 @@ export function JobCard({
   const showApply = !applyProps.isClosed && !!applyHref;
 
   return (
-    <Card className="rounded-2xl border border-primary/100 bg-[#fdfdfc] shadow-sm transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5">
+    <Card className="group rounded-3xl border border-primary/50 bg-card shadow-sm">
       <CardHeader>
         <div className="flex items-start gap-4">
           {/* Company logo – top left */}
           {job.employer?.company_logo_url ? (
             <Link
               href={`/jobs/${job.slug}`}
-              className="relative shrink-0  overflow-hidden rounded-xl"
+              className="relative shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-background p-2"
             >
               {canUseNextImageForUrl(job.employer.company_logo_url) ? (
                 <Image
@@ -94,7 +94,7 @@ export function JobCard({
                   alt=""
                   width={220}
                   height={220}
-                  className="h-auto max-h-[70px] w-auto max-w-[70px] object-contain pt-[1px]"
+                  className="h-auto max-h-[58px] w-auto max-w-[58px] object-contain"
                 />
               ) : (
                 // Use a plain <img> for unknown hosts to avoid next/image remote host errors.
@@ -102,22 +102,29 @@ export function JobCard({
                 <img
                   src={job.employer.company_logo_url}
                   alt=""
-                  className="h-auto max-h-[70px] w-auto max-w-[70px] object-contain pt-[5px]"
+                  className="h-auto max-h-[58px] w-auto max-w-[58px] object-contain"
                   loading="lazy"
                 />
               )}
             </Link>
           ) : (
-            <div className="h-[70px] w-[70px] shrink-0" aria-hidden />
+            <div
+              className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-muted text-sm font-semibold text-muted-foreground"
+              aria-hidden
+            >
+              {(job.employer?.company_name ?? job.employer?.full_name ?? "?")
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <Link href={`/jobs/${job.slug}`} className="min-w-0 flex-1">
-                <h2 className="font-heading text-[1.3rem] font-semibold leading-tight text-heading hover:underline">
+                <h2 className="font-heading text-xl font-semibold leading-tight text-heading group-hover:text-primary">
                   {job.title}
                 </h2>
                 {(job.employer?.company_name ?? job.employer?.full_name) && (
-                  <p className="mt-0.5 text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {job.employer?.company_name ?? job.employer?.full_name}
                   </p>
                 )}
@@ -127,28 +134,29 @@ export function JobCard({
                 initialIsFavorited={isFavorited}
                 isLoggedIn={isLoggedIn}
                 variant="icon"
-                className=" hover:bg-muted/30 [&_svg]:h-5 [&_svg]:w-5"
+                className="rounded-xl hover:bg-muted/50 [&_svg]:h-5 [&_svg]:w-5"
               />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {job.role && (
                 <>
-                  <span>{job.role}</span>
-                  <span aria-hidden>·</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-foreground/80">
+                    {job.role}
+                  </span>
                 </>
               )}
               <span>{job.work_type}</span>
-              <span aria-hidden>·</span>
+              <span aria-hidden>•</span>
               <span>{job.job_type}</span>
               {job.closed_at && (
                 <>
-                  <span aria-hidden>·</span>
-                  <span>Filled</span>
+                  <span aria-hidden>•</span>
+                  <span className="font-medium text-destructive">Filled</span>
                 </>
               )}
             </div>
             {/* Tech pills | Quick look (center) | Posted + salary/location (right) */}
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               {job.tech_stack?.length > 0 ? (
                 <Link
                   href={`/jobs/${job.slug}`}
@@ -157,7 +165,7 @@ export function JobCard({
                   {job.tech_stack.slice(0, 6).map((t) => (
                     <span
                       key={t}
-                      className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+                      className="rounded-full border border-primary/15 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
                     >
                       {t}
                     </span>
@@ -170,7 +178,7 @@ export function JobCard({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-auto shrink-0 gap-1 p-0 text-xs font-semibold text-primary hover:bg-transparent hover:text-primary/80 hover:underline focus-visible:ring-0"
+                className="h-auto shrink-0 gap-1 rounded-full border border-border/70 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/10 hover:text-primary focus-visible:ring-0"
                 onClick={() => setQuickLookOpen((o) => !o)}
                 aria-expanded={quickLookOpen}
               >
@@ -188,7 +196,7 @@ export function JobCard({
                 className="relative z-10 flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 text-right"
               >
                 {(job.salary_min != null || job.salary_max != null) && (
-                  <span className="text-xs font-semibold text-primary">
+                  <span className="rounded-full bg-[hsl(var(--salary)/0.14)] px-2.5 py-0.5 text-xs font-semibold text-[hsl(var(--salary))]">
                     {formatSalary(job.salary_min, job.salary_max)}
                   </span>
                 )}
@@ -213,7 +221,7 @@ export function JobCard({
         }`}
       >
         <div className="min-h-0 overflow-hidden">
-          <CardContent className="rounded-b-2xl border-t border-border/60 bg-[#fdfdfc] pl-[110px] pr-[3rem] pt-4">
+          <CardContent className="rounded-b-3xl border-t border-border/60 bg-muted/20 pl-[110px] pr-[3rem] pt-4">
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-x-[4rem] gap-y-6 md:grid-cols-2 md:grid-rows-2 md:items-start">
                 {job.summary?.trim() && (

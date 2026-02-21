@@ -27,10 +27,12 @@ export default async function SavedSearchesPage() {
   const searches = await getSavedSearches(user.id);
 
   return (
-    <main className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-semibold tracking-tight">Saved searches</h1>
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-6 rounded-3xl border border-border/70 bg-card p-6 shadow-sm">
+          <h1 className="text-3xl font-semibold tracking-tight text-heading">
+            Saved searches
+          </h1>
           <p className="mt-2 text-muted-foreground">
             {searches.length === 0
               ? "You have no saved searches."
@@ -39,9 +41,12 @@ export default async function SavedSearchesPage() {
         </div>
 
         {searches.length === 0 ? (
-          <Card>
+          <Card className="rounded-3xl border border-dashed border-border/80 bg-card shadow-sm">
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/60" aria-hidden />
+              <Briefcase
+                className="mx-auto h-12 w-12 text-primary/70"
+                aria-hidden
+              />
               <p className="text-muted-foreground mt-4 mb-4">
                 Save a search from the Jobs page to quickly run it again later.
               </p>
@@ -56,11 +61,16 @@ export default async function SavedSearchesPage() {
               const queryString = buildJobsQueryString(search.filters);
               const summary = formatFiltersSummary(search.filters);
               return (
-                <Card key={search.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={search.id}
+                  className="rounded-3xl border border-border/80 bg-card/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-lg font-semibold">{search.name}</h2>
+                        <h2 className="text-lg font-semibold text-heading">
+                          {search.name}
+                        </h2>
                         {summary && (
                           <p className="mt-1 text-sm text-muted-foreground">{summary}</p>
                         )}

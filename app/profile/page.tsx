@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createSignedCvUrl } from "@/lib/storage";
-import { getCvFileName } from "@/lib/utils";
 import type { ApplicationPreference, Profile as ProfileType } from "@/lib/types";
 import { ProfileForm } from "./profile-form";
 
@@ -29,25 +28,6 @@ export default async function ProfilePage() {
     .eq("id", user.id)
     .single();
 
-  const { data: cvsRows } = await supabase
-    .from("user_cvs")
-    .select("id, storage_path, display_name, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true });
-
-  const cvs =
-    cvsRows?.map(async (row) => {
-      const { url } = await createSignedCvUrl(supabase, row.storage_path, 3600);
-      return {
-        id: row.id,
-        storage_path: row.storage_path,
-        display_name: row.display_name ?? null,
-        downloadUrl: url ?? null,
-        fileName: getCvFileName(row.storage_path),
-      };
-    }) ?? [];
-  const cvsWithUrls = await Promise.all(cvs);
-
   const profileData: ProfileType = {
     id: profile?.id ?? user.id,
     role: profile?.role ?? "job_seeker",
@@ -64,26 +44,24 @@ export default async function ProfilePage() {
   };
 
   return (
-    <main className="min-h-screen p-6 max-w-lg mx-auto">
-      <div className="space-y-6">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 p-6">
+      <div className="mx-auto max-w-lg space-y-6">
         <div>
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← Back to home
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back to home
           </Link>
         </div>
-        <div>
-          <h1 className="text-2xl font-semibold">Profile</h1>
+        <div className="rounded-3xl border border-border/80 bg-card/95 p-6 shadow-sm">
+          <h1 className="text-2xl font-semibold text-heading">Profile</h1>
           <p className="text-muted-foreground text-sm">
             Update your account and, if you’re an employer, your company info.
           </p>
         </div>
-        <ProfileForm
-          profile={profileData}
-          cvs={cvsWithUrls}
-        />
+        <ProfileForm profile={profileData} />
       </div>
     </main>
   );

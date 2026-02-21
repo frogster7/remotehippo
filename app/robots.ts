@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/employer/dashboard",
         "/employer/jobs",
+        "/dashboard",
         "/profile",
         "/saved-jobs",
         "/my-applications",

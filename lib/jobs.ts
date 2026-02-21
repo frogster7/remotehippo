@@ -2,8 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { ApplicationWithJob, Job, JobFilters } from "@/lib/types";
 import { SPECIALIZATIONS, TECH_STACK_OPTIONS } from "@/lib/types";
 
-/** Fetch active jobs with optional filters. Used for /jobs list. */
-export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
+/** Fetch active jobs with optional filters. Used for /jobs list. Optional limit for dashboard tailored feed. */
+export async function getJobs(
+  filters: JobFilters = {},
+  limit?: number
+): Promise<Job[]> {
   const supabase = await createClient();
   let query = supabase
     .from("jobs")
@@ -55,6 +58,9 @@ export async function getJobs(filters: JobFilters = {}): Promise<Job[]> {
     }
   }
 
+  if (limit != null && limit > 0) {
+    query = query.limit(limit);
+  }
   const { data: rows, error } = await query;
   if (error) throw error;
   return ((rows ?? []) as unknown[]).map((row) => {
@@ -89,6 +95,80 @@ export async function getJobBySlug(slug: string): Promise<Job | null> {
     profiles: Job["employer"] | null;
   };
   return { ...rest, employer: profiles ?? undefined } as Job;
+}
+
+/** Fetch similar active jobs for detail sidebar. */
+export async function getSimilarJobs(
+  currentJob: Job,
+  limit = 3,
+): Promise<Job[]> {
+  const supabase = await createClient();
+
+  const mapRows = (rows: unknown[]): Job[] =>
+    rows.map((row) => {
+      const { profiles, ...rest } = row as typeof row & {
+        profiles: Job["employer"] | null;
+      };
+      return { ...rest, employer: profiles ?? undefined } as Job;
+    });
+
+  let query = supabase
+    .from("jobs")
+    .select(
+      `
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
+    `,
+    )
+    .eq("is_active", true)
+    .neq("id", currentJob.id)
+    .eq("work_type", currentJob.work_type)
+    .eq("job_type", currentJob.job_type)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (currentJob.role?.trim()) {
+    query = query.ilike("role", `%${currentJob.role.trim()}%`);
+  }
+  if (currentJob.tech_stack?.length) {
+    query = query.overlaps("tech_stack", currentJob.tech_stack.slice(0, 6));
+  }
+
+  const { data: strictRows, error: strictError } = await query;
+  if (strictError) throw strictError;
+  const strict = mapRows((strictRows ?? []) as unknown[]);
+  if (strict.length >= limit) return strict.slice(0, limit);
+
+  const { data: fallbackRows, error: fallbackError } = await supabase
+    .from("jobs")
+    .select(
+      `
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url, application_preference)
+    `,
+    )
+    .eq("is_active", true)
+    .neq("id", currentJob.id)
+    .order("created_at", { ascending: false })
+    .limit(limit * 3);
+  if (fallbackError) throw fallbackError;
+  const fallback = mapRows((fallbackRows ?? []) as unknown[]);
+
+  const merged = [...strict];
+  const seen = new Set(merged.map((j) => j.id));
+  for (const candidate of fallback) {
+    if (seen.has(candidate.id)) continue;
+    seen.add(candidate.id);
+    merged.push(candidate);
+    if (merged.length >= limit) break;
+  }
+  return merged.slice(0, limit);
 }
 
 /** Recent active jobs with employer info. Used for homepage "recently posted" section. */

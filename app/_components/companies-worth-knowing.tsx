@@ -34,7 +34,7 @@ function CompanyCard({
 
   return (
     <HydrationSafeDiv
-      className="relative flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md transition-all hover:shadow-lg scroll-snap-align-start"
+      className="relative flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-primary/100 bg-[#fdfdfc] shadow-md scroll-snap-align-start"
       style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.06)" }}
     >
       {/* Top patterned area – same as Recently posted cards */}
@@ -191,7 +191,7 @@ export function CompaniesWorthKnowing({
           <button
             type="button"
             onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-blue-600 text-white shadow-md transition hover:bg-blue-700"
+            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition hover:bg-primary/90"
             aria-label="Scroll to next companies"
           >
             <ChevronRight className="h-5 w-5" />
