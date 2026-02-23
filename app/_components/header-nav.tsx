@@ -8,6 +8,7 @@ import {
   BarChart3,
   BellRing,
   Briefcase,
+  Building2,
   ChevronDown,
   FileInput,
   FileText,
@@ -103,7 +104,8 @@ export function HeaderNav({
         { href: "/employer/dashboard", label: "Your desktop", icon: LayoutDashboard },
         { href: "/employer/dashboard?panel=listings", label: "Your job listings", icon: Briefcase },
         { href: "/employer/dashboard?panel=stats", label: "Stats", icon: BarChart3 },
-        { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile", icon: User },
+        { href: user ? `/employer/${user.id}` : "/employer/dashboard", label: "Company page", icon: Building2 },
+        { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile/company page", icon: User },
       ]
     : [
         { href: dashboardHref, label: "Your desktop", icon: Home },
@@ -117,6 +119,7 @@ export function HeaderNav({
 
   const navLinks: NavItem[] = [
     { href: "/jobs", label: "Jobs" },
+    { href: "/companies", label: "Companies" },
     { href: "/blog", label: "Blog" },
     ...(user
       ? isEmployer
@@ -125,7 +128,8 @@ export function HeaderNav({
             { href: "/employer/dashboard", label: "Your desktop" },
             { href: "/employer/dashboard?panel=listings", label: "Your job listings" },
             { href: "/employer/dashboard?panel=stats", label: "Stats" },
-            { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile" },
+            ...(user ? [{ href: `/employer/${user.id}`, label: "Company page" }] : []),
+            { href: "/employer/dashboard?panel=edit-profile", label: "Edit profile/company page" },
             { type: "signout" as const, label: "Sign out" },
           ]
         : [

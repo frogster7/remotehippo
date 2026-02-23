@@ -104,6 +104,8 @@ export interface Job {
     company_about?: string | null;
     company_location?: string | null;
     application_preference?: ApplicationPreference | null;
+    /** First company banner URL (for homepage discover cards). */
+    banner_url?: string | null;
   };
 }
 
@@ -188,6 +190,50 @@ export interface SavedSearch {
   user_id: string;
   name: string;
   filters: JobFilters;
+  created_at: string;
+}
+
+/** Company benefit (employer-defined). */
+export interface CompanyBenefit {
+  id: string;
+  employer_id: string;
+  title: string;
+  description: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+/** Experience/review status (DB: experience_status enum). */
+export type ExperienceStatus = "pending" | "approved";
+
+/** Company experience (user-submitted review). */
+export interface CompanyExperience {
+  id: string;
+  employer_id: string;
+  author_id: string;
+  content: string;
+  status: ExperienceStatus;
+  created_at: string;
+  author_name?: string | null;
+}
+
+/** Company hiring process step. */
+export interface CompanyHiringStep {
+  id: string;
+  employer_id: string;
+  title: string;
+  description: string | null;
+  step_order: number;
+  created_at: string;
+}
+
+/** Company gallery image. */
+export interface CompanyGalleryItem {
+  id: string;
+  employer_id: string;
+  url: string;
+  caption: string | null;
+  display_order: number;
   created_at: string;
 }
 

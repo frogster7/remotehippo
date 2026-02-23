@@ -63,7 +63,14 @@ export default async function EmployerDashboardPage({
     .single();
   if (profile?.role !== "employer") redirect("/profile");
 
-  const [jobs, stats, { data: bannersData }] = await Promise.all([
+  const [
+    jobs,
+    stats,
+    { data: bannersData },
+    { data: benefitsData },
+    { data: hiringStepsData },
+    { data: galleryData },
+  ] = await Promise.all([
     getEmployerJobs(user.id),
     getJobStats(user.id),
     supabase
@@ -71,9 +78,45 @@ export default async function EmployerDashboardPage({
       .select("id, url")
       .eq("employer_id", user.id)
       .order("display_order", { ascending: true }),
+    supabase
+      .from("company_benefits")
+      .select("id, employer_id, title, description, display_order, created_at")
+      .eq("employer_id", user.id)
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("company_hiring_steps")
+      .select("id, employer_id, title, description, step_order, created_at")
+      .eq("employer_id", user.id)
+      .order("step_order", { ascending: true }),
+    supabase
+      .from("company_gallery")
+      .select("id, employer_id, url, caption, display_order, created_at")
+      .eq("employer_id", user.id)
+      .order("display_order", { ascending: true }),
   ]);
 
   const banners = (bannersData ?? []).map((b) => ({ id: b.id, url: b.url }));
+  const benefits = (benefitsData ?? []) as {
+    id: string;
+    employer_id: string;
+    title: string;
+    description: string | null;
+    display_order: number;
+    created_at: string;
+  }[];
+  const hiringSteps = (hiringStepsData ?? []) as {
+    id: string;
+    employer_id: string;
+    title: string;
+    description: string | null;
+    step_order: number;
+    created_at: string;
+  }[];
+  const gallery = (galleryData ?? []).map((g) => ({
+    id: g.id,
+    url: g.url,
+    caption: g.caption as string | null,
+  }));
 
   const profileData: ProfileType = {
     id: profile?.id ?? user.id,
@@ -93,7 +136,7 @@ export default async function EmployerDashboardPage({
     home: "Your desktop",
     listings: "Your job listings",
     stats: "Stats",
-    "edit-profile": "Edit profile",
+    "edit-profile": "Edit profile/company page",
   };
 
   const companyDisplayName =
@@ -133,13 +176,21 @@ export default async function EmployerDashboardPage({
                         <Building2 className="h-5 w-5" />
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-heading">
                         {companyDisplayName}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {user.email ?? ""}
                       </p>
+                      <Link
+                        href={`/employer/${user.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block text-xs font-medium text-primary hover:underline"
+                      >
+                        View company page
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -158,7 +209,7 @@ export default async function EmployerDashboardPage({
                     { id: "stats" as const, label: "Stats", icon: BarChart3 },
                     {
                       id: "edit-profile" as const,
-                      label: "Edit profile",
+                      label: "Edit profile/company page",
                       icon: Settings,
                     },
                   ].map((item) => {
@@ -463,7 +514,13 @@ export default async function EmployerDashboardPage({
                     )}
 
                     {activePanel === "edit-profile" && (
-                      <ProfileForm profile={profileData} banners={banners} />
+                      <ProfileForm
+                        profile={profileData}
+                        banners={banners}
+                        benefits={benefits}
+                        hiringSteps={hiringSteps}
+                        gallery={gallery}
+                      />
                     )}
                   </CardContent>
                 </Card>

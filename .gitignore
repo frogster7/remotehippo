@@ -43,3 +43,7 @@ coverage/
 # Misc
 *.log
 .cache
+
+# Don’t commit installers or usage data from public/
+public/*.exe
+public/usage-events-*.csv

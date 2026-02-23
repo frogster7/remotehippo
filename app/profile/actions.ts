@@ -6,6 +6,7 @@ import {
   uploadCoverLetter,
   uploadLogo,
   uploadBanner,
+  uploadGalleryImage,
   deleteStorageFile,
   CV_BUCKET,
   LOGO_BUCKET,
@@ -387,4 +388,313 @@ export async function deleteBanner(bannerId: string): Promise<{
     .eq("employer_id", user.id);
 
   return { error: deleteError?.message ?? null };
+}
+
+// -----------------------------------------------------------------------------
+// Company benefits
+// -----------------------------------------------------------------------------
+const MAX_BENEFITS = 12;
+
+export async function addBenefit(formData: FormData): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "employer") return { error: "Employers only." };
+
+  const { count } = await supabase
+    .from("company_benefits")
+    .select("id", { count: "exact", head: true })
+    .eq("employer_id", user.id);
+  if ((count ?? 0) >= MAX_BENEFITS) {
+    return { error: `You can add up to ${MAX_BENEFITS} benefits.` };
+  }
+
+  const title = (formData.get("title") as string)?.trim();
+  if (!title) return { error: "Title is required." };
+
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  const { data: maxRow } = await supabase
+    .from("company_benefits")
+    .select("display_order")
+    .eq("employer_id", user.id)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.display_order ?? -1) + 1;
+
+  const { error } = await supabase.from("company_benefits").insert({
+    employer_id: user.id,
+    title,
+    description,
+    display_order: nextOrder,
+  });
+
+  return { error: error?.message ?? null };
+}
+
+export async function updateBenefit(
+  benefitId: string,
+  formData: FormData
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const title = (formData.get("title") as string)?.trim();
+  if (!title) return { error: "Title is required." };
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  const { error } = await supabase
+    .from("company_benefits")
+    .update({ title, description })
+    .eq("id", benefitId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
+export async function deleteBenefit(benefitId: string): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("company_benefits")
+    .delete()
+    .eq("id", benefitId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
+// -----------------------------------------------------------------------------
+// Company hiring steps
+// -----------------------------------------------------------------------------
+const MAX_HIRING_STEPS = 10;
+
+export async function addHiringStep(formData: FormData): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "employer") return { error: "Employers only." };
+
+  const { count } = await supabase
+    .from("company_hiring_steps")
+    .select("id", { count: "exact", head: true })
+    .eq("employer_id", user.id);
+  if ((count ?? 0) >= MAX_HIRING_STEPS) {
+    return { error: `You can add up to ${MAX_HIRING_STEPS} hiring steps.` };
+  }
+
+  const title = (formData.get("title") as string)?.trim();
+  if (!title) return { error: "Title is required." };
+
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  const { data: maxRow } = await supabase
+    .from("company_hiring_steps")
+    .select("step_order")
+    .eq("employer_id", user.id)
+    .order("step_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.step_order ?? -1) + 1;
+
+  const { error } = await supabase.from("company_hiring_steps").insert({
+    employer_id: user.id,
+    title,
+    description,
+    step_order: nextOrder,
+  });
+
+  return { error: error?.message ?? null };
+}
+
+export async function updateHiringStep(
+  stepId: string,
+  formData: FormData
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const title = (formData.get("title") as string)?.trim();
+  if (!title) return { error: "Title is required." };
+  const description = (formData.get("description") as string)?.trim() || null;
+
+  const { error } = await supabase
+    .from("company_hiring_steps")
+    .update({ title, description })
+    .eq("id", stepId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
+export async function deleteHiringStep(stepId: string): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("company_hiring_steps")
+    .delete()
+    .eq("id", stepId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
+// -----------------------------------------------------------------------------
+// Company gallery
+// -----------------------------------------------------------------------------
+const MAX_GALLERY_IMAGES = 12;
+
+export async function addGalleryImage(formData: FormData): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "employer") return { error: "Employers only." };
+
+  const { count } = await supabase
+    .from("company_gallery")
+    .select("id", { count: "exact", head: true })
+    .eq("employer_id", user.id);
+  if ((count ?? 0) >= MAX_GALLERY_IMAGES) {
+    return { error: `You can add up to ${MAX_GALLERY_IMAGES} gallery images.` };
+  }
+
+  const file = formData.get("file") as File | null;
+  if (!file?.size) return { error: "No image provided." };
+
+  const { url, error: uploadError } = await uploadGalleryImage(
+    supabase,
+    user.id,
+    file
+  );
+  if (uploadError) return { error: uploadError };
+
+  const caption = (formData.get("caption") as string)?.trim() || null;
+
+  const { data: maxRow } = await supabase
+    .from("company_gallery")
+    .select("display_order")
+    .eq("employer_id", user.id)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.display_order ?? -1) + 1;
+
+  const { error } = await supabase.from("company_gallery").insert({
+    employer_id: user.id,
+    url,
+    caption,
+    display_order: nextOrder,
+  });
+
+  return { error: error?.message ?? null };
+}
+
+export async function updateGalleryCaption(
+  galleryId: string,
+  caption: string | null
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("company_gallery")
+    .update({ caption })
+    .eq("id", galleryId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
+}
+
+export async function deleteGalleryImage(galleryId: string): Promise<{
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data: row } = await supabase
+    .from("company_gallery")
+    .select("id, url")
+    .eq("id", galleryId)
+    .eq("employer_id", user.id)
+    .single();
+  if (!row) return { error: "Image not found." };
+
+  const path = (() => {
+    const match = (row.url as string).match(/\/company-logos\/(.+)$/);
+    return match ? match[1] : null;
+  })();
+  if (path) {
+    const { error: delError } = await deleteStorageFile(
+      supabase,
+      LOGO_BUCKET,
+      path
+    );
+    if (delError) return { error: delError };
+  }
+
+  const { error } = await supabase
+    .from("company_gallery")
+    .delete()
+    .eq("id", galleryId)
+    .eq("employer_id", user.id);
+
+  return { error: error?.message ?? null };
 }

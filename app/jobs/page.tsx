@@ -92,7 +92,7 @@ export default async function JobsPage({
   return (
     <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       <div className="mx-auto max-w-[1140px] px-4 pb-14 pt-6 sm:pt-8">
-        <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card px-6 py-7 shadow-sm sm:px-8">
+        <section className="relative overflow-hidden rounded-3xl bg-card px-6 py-7 shadow-md sm:px-8">
           <div
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_55%)]"
             aria-hidden
@@ -122,7 +122,7 @@ export default async function JobsPage({
         <div className="sticky top-0 z-20 mt-4 bg-background/90 pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/75">
           <Suspense
             fallback={
-              <div className="h-24 animate-pulse rounded-2xl border border-border/80 bg-card" />
+              <div className="h-24 animate-pulse rounded-2xl bg-card shadow-md" />
             }
           >
             <JobsFilter
@@ -137,7 +137,7 @@ export default async function JobsPage({
 
         <section className="pt-7">
           {jobs.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-border/80 bg-card p-12 text-center shadow-sm">
+            <div className="rounded-3xl bg-card p-12 text-center shadow-md">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                 <Briefcase className="h-7 w-7 text-primary" aria-hidden />
               </div>
@@ -154,7 +154,7 @@ export default async function JobsPage({
                 <span className="text-sm font-medium text-foreground">
                   {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
                 </span>
-                <span className="rounded-full border border-border/80 bg-card px-3 py-1 text-xs text-muted-foreground">
+                <span className="rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow-md">
                   Sorted by newest
                 </span>
               </div>

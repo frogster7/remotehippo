@@ -20,7 +20,13 @@ export default async function ProfilePage() {
     redirect("/login?next=/profile");
   }
 
-  const [{ data: profile }, { data: bannersData }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: bannersData },
+    { data: benefitsData },
+    { data: hiringStepsData },
+    { data: galleryData },
+  ] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -33,9 +39,45 @@ export default async function ProfilePage() {
       .select("id, url")
       .eq("employer_id", user.id)
       .order("display_order", { ascending: true }),
+    supabase
+      .from("company_benefits")
+      .select("id, employer_id, title, description, display_order, created_at")
+      .eq("employer_id", user.id)
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("company_hiring_steps")
+      .select("id, employer_id, title, description, step_order, created_at")
+      .eq("employer_id", user.id)
+      .order("step_order", { ascending: true }),
+    supabase
+      .from("company_gallery")
+      .select("id, employer_id, url, caption, display_order, created_at")
+      .eq("employer_id", user.id)
+      .order("display_order", { ascending: true }),
   ]);
 
   const banners = (bannersData ?? []).map((b) => ({ id: b.id, url: b.url }));
+  const benefits = (benefitsData ?? []) as {
+    id: string;
+    employer_id: string;
+    title: string;
+    description: string | null;
+    display_order: number;
+    created_at: string;
+  }[];
+  const hiringSteps = (hiringStepsData ?? []) as {
+    id: string;
+    employer_id: string;
+    title: string;
+    description: string | null;
+    step_order: number;
+    created_at: string;
+  }[];
+  const gallery = (galleryData ?? []).map((g) => ({
+    id: g.id,
+    url: g.url,
+    caption: g.caption as string | null,
+  }));
 
   const profileData: ProfileType = {
     id: profile?.id ?? user.id,
@@ -70,7 +112,13 @@ export default async function ProfilePage() {
             Update your account and, if you’re an employer, your company info.
           </p>
         </div>
-        <ProfileForm profile={profileData} banners={banners} />
+        <ProfileForm
+          profile={profileData}
+          banners={banners}
+          benefits={benefits}
+          hiringSteps={hiringSteps}
+          gallery={gallery}
+        />
       </div>
     </main>
   );

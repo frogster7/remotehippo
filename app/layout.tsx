@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Open_Sans, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Header } from "./_components/header";
+import { Footer } from "./_components/footer";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -53,9 +54,10 @@ export default function RootLayout({
         className={`${openSans.className} antialiased`}
         suppressHydrationWarning
       >
-        <div suppressHydrationWarning>
+        <div className="flex min-h-screen flex-col" suppressHydrationWarning>
           <Header />
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </div>
       </body>
     </html>

@@ -503,6 +503,69 @@ Reference for what was implemented at each major step. Use this when debugging o
 
 ---
 
+## Company profile extensions (benefits, experiences, hiring process, gallery)
+
+**What was done:**
+
+- **Database:** Migration `017_company_profile_extensions.sql` – tables `company_benefits` (id, employer_id, title, description, display_order), `company_experiences` (id, employer_id, author_id, content, status: pending/approved), `company_hiring_steps` (id, employer_id, title, description, step_order), `company_gallery` (id, employer_id, url, caption, display_order). RLS: employers manage own benefits/steps/gallery; users submit experiences; public sees approved experiences only; employers can approve/delete experiences.
+- **Types:** `lib/types.ts` – `CompanyBenefit`, `CompanyExperience`, `ExperienceStatus`, `CompanyHiringStep`, `CompanyGalleryItem`.
+- **Data layer:** `lib/company-profile.ts` – `getCompanyBanners`, `getCompanyBenefits`, `getCompanyExperiences` (approved only), `getCompanyExperiencesForEmployer` (all for moderation), `getCompanyHiringSteps`, `getCompanyGallery`.
+- **Storage:** `lib/storage.ts` – `uploadGalleryImage`; path `{userId}/gallery/` in company-logos bucket.
+- **Profile actions:** `addBenefit`, `updateBenefit`, `deleteBenefit` (max 12); `addHiringStep`, `updateHiringStep`, `deleteHiringStep` (max 10); `addGalleryImage`, `updateGalleryCaption`, `deleteGalleryImage` (max 12).
+- **Profile form:** Employer-only sections: Benefits (add/delete list), Hiring process (add/delete ordered steps), Gallery (upload/delete images with optional captions). Profile page and employer dashboard fetch and pass benefits, hiringSteps, gallery to ProfileForm.
+
+**Key files:**
+
+- `supabase/migrations/017_company_profile_extensions.sql`.
+- `lib/types.ts` (CompanyBenefit, CompanyExperience, etc.), `lib/company-profile.ts`.
+- `lib/storage.ts` (uploadGalleryImage).
+- `app/profile/actions.ts` (benefits, hiring steps, gallery actions).
+- `app/profile/profile-form.tsx` (Benefits, Hiring process, Gallery cards).
+- `app/profile/page.tsx`, `app/employer/dashboard/page.tsx` (fetch and pass data).
+
+**Notes:** Run migration 017 in Supabase SQL Editor. Company profile page (banner, sticky nav, all six sections) and experience submission to be added in follow-up steps.
+
+---
+
+## Employer moderation (experiences)
+
+**What was done:**
+
+- **Server actions:** `app/employer/actions.ts` – `approveExperience(experienceId)` (sets status to 'approved'), `rejectExperience(experienceId)` (deletes row). Both call `ensureEmployer()` and revalidate `/employer/dashboard` and `/employer`.
+- **Reviews panel:** Added "Reviews" panel to employer dashboard (sidebar nav, MessageSquare icon). Lists pending experiences with content, author name, and relative date. Approve / Reject buttons per experience via `ExperienceModerationButtons` client component.
+- **Empty state:** When no pending reviews, shows message and link to company profile page.
+
+**Key files:**
+
+- `app/employer/actions.ts` (approveExperience, rejectExperience).
+- `app/employer/experience-moderation-buttons.tsx` – client component with Approve/Reject, calls server actions, router.refresh().
+- `app/employer/dashboard/page.tsx` – Reviews panel, fetch via getCompanyExperiencesForEmployer, pending count in header.
+
+---
+
+## Company profile page – layout and sections (Steps 4 & 6)
+
+**What was done:**
+
+- **getEmployerPublicProfile:** Extended to select `company_about`, `company_location` for the About section.
+- **Submit experience (Step 4):** `app/employer/[id]/actions.ts` – `submitExperience(employerId, content)` server action. Requires auth; inserts into `company_experiences` with `status: 'pending'`. `app/employer/[id]/submit-experience-form.tsx` – client form with textarea; when not logged in shows "Share your experience" link to `/login?next=/employer/{id}#experiences`; when logged in shows form; success message "Thanks, your review is pending approval."
+- **Company profile page (Step 6):** `app/employer/[id]/page.tsx` rebuilt with:
+  - **Banner** – `BannerSlider` when banners exist; placeholder gradient when none.
+  - **Hero card** – logo, company name, website (unchanged).
+  - **Sticky section nav** – horizontal links to #about, #open-positions, #benefits, #experiences, #hiring-process, #gallery.
+  - **Sections:** About (company_about, company_location), Open positions (JobCards), Benefits (grid), Employee experiences (approved list + SubmitExperienceForm), Hiring process (ordered steps), Gallery (image grid with captions).
+- **Metadata:** `generateMetadata` uses `company_about` in description when present.
+- **Loading:** `app/employer/[id]/loading.tsx` – skeleton for the profile page.
+
+**Key files:**
+
+- `lib/jobs.ts` (getEmployerPublicProfile: company_about, company_location).
+- `app/employer/[id]/actions.ts` (submitExperience).
+- `app/employer/[id]/submit-experience-form.tsx`.
+- `app/employer/[id]/page.tsx`, `app/employer/[id]/loading.tsx`.
+
+---
+
 ## Sign up forms – styling, logo/banner upload, required markers
 
 **What was done:**
@@ -560,6 +623,8 @@ Reference for what was implemented at each major step. Use this when debugging o
 | Dashboard, documents, notifications         | `app/dashboard/page.tsx`, `app/dashboard/documents-panel.tsx`, `lib/notifications.ts`, migrations 012–014, `app/_components/header-nav.tsx` (dropdowns).     |
 | Cover letters, default CV/CL                | Migrations 013–014, `app/profile/actions.ts` (addCoverLetterToUser, setDefaultCv, setDefaultCoverLetter), `app/jobs/[slug]/apply/*`.                         |
 | Company dashboard, job stats, banners       | Migrations 015–016, `lib/job-analytics.ts`, `app/employer/dashboard/*`, `app/jobs/[slug]/banner-slider.tsx`, `app/profile/*` (addBanner, deleteBanner).     |
+| Company profile (benefits, gallery, etc.)   | Migration 017, `lib/company-profile.ts`, `lib/storage.ts` (uploadGalleryImage), `app/profile/*` (benefits, hiring steps, gallery).                          |
+| Employer experience moderation             | `app/employer/actions.ts` (approveExperience, rejectExperience), `app/employer/experience-moderation-buttons.tsx`, employer dashboard Reviews panel.     |
 
 
 ---

@@ -145,3 +145,34 @@ export async function reopenJob(jobId: string): Promise<{ error?: string }> {
   revalidatePath("/jobs");
   return {};
 }
+
+/** Approve a pending experience/review (employer moderation). RLS ensures employer owns company. */
+export async function approveExperience(
+  experienceId: string
+): Promise<{ error?: string }> {
+  const { supabase } = await ensureEmployer();
+  const { error } = await supabase
+    .from("company_experiences")
+    .update({ status: "approved" })
+    .eq("id", experienceId);
+  if (error) return { error: error.message };
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/employer");
+  return {};
+}
+
+/** Reject (delete) a pending experience. RLS ensures employer owns company. */
+export async function rejectExperience(
+  experienceId: string
+): Promise<{ error?: string }> {
+  await ensureEmployer();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("company_experiences")
+    .delete()
+    .eq("id", experienceId);
+  if (error) return { error: error.message };
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/employer");
+  return {};
+}

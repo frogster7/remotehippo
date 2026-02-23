@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { Profile } from "@/lib/types";
 import {
   isAllowedLogoFileName,
@@ -14,6 +14,12 @@ import {
   deleteLogoAndUpdateProfile,
   addBanner,
   deleteBanner,
+  addBenefit,
+  deleteBenefit,
+  addHiringStep,
+  deleteHiringStep,
+  addGalleryImage,
+  deleteGalleryImage,
   type ProfileUpdateData,
 } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -27,21 +33,39 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Building2, Trash2, User } from "lucide-react";
+import { Building2, Trash2, User, Gift, ListOrdered, ImagePlus } from "lucide-react";
 const LOGO_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
 export type CompanyBanner = { id: string; url: string };
+export type CompanyBenefitItem = {
+  id: string;
+  title: string;
+  description: string | null;
+};
+export type CompanyHiringStepItem = {
+  id: string;
+  title: string;
+  description: string | null;
+};
+export type CompanyGalleryItem = { id: string; url: string; caption: string | null };
 
 export function ProfileForm({
   profile,
   banners = [],
+  benefits = [],
+  hiringSteps = [],
+  gallery = [],
 }: {
   profile: Profile;
   banners?: CompanyBanner[];
+  benefits?: CompanyBenefitItem[];
+  hiringSteps?: CompanyHiringStepItem[];
+  gallery?: CompanyGalleryItem[];
 }) {
   const router = useRouter();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const companyAboutRef = useRef<HTMLTextAreaElement>(null);
 
   const [fullName, setFullName] = useState(profile.full_name ?? "");
   const [lastName, setLastName] = useState(profile.last_name ?? "");
@@ -62,6 +86,9 @@ export function ProfileForm({
   const [loading, setLoading] = useState(false);
   const [logoLoading, setLogoLoading] = useState(false);
   const [bannerLoading, setBannerLoading] = useState(false);
+  const [benefitLoading, setBenefitLoading] = useState<string | null>(null);
+  const [hiringStepLoading, setHiringStepLoading] = useState<string | null>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
 
   const updateData = (): ProfileUpdateData => ({
     full_name: fullName.trim() || null,
@@ -159,7 +186,104 @@ export function ProfileForm({
     router.refresh();
   }
 
+  async function handleAddBenefit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    setError(null);
+    setBenefitLoading("add");
+    const result = await addBenefit(formData);
+    setBenefitLoading(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    form.reset();
+    router.refresh();
+  }
+
+  async function handleDeleteBenefit(id: string) {
+    setError(null);
+    setBenefitLoading(id);
+    const result = await deleteBenefit(id);
+    setBenefitLoading(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleAddHiringStep(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    setError(null);
+    setHiringStepLoading("add");
+    const result = await addHiringStep(formData);
+    setHiringStepLoading(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    form.reset();
+    router.refresh();
+  }
+
+  async function handleDeleteHiringStep(id: string) {
+    setError(null);
+    setHiringStepLoading(id);
+    const result = await deleteHiringStep(id);
+    setHiringStepLoading(null);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleAddGalleryImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isAllowedLogoFileName(file.name)) {
+      setError(`Allowed formats: ${LOGO_ACCEPT}`);
+      return;
+    }
+    setError(null);
+    setGalleryLoading(true);
+    const formData = new FormData();
+    formData.set("file", file);
+    const result = await addGalleryImage(formData);
+    setGalleryLoading(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    e.target.value = "";
+    router.refresh();
+  }
+
+  async function handleDeleteGalleryImage(id: string) {
+    setError(null);
+    setGalleryLoading(true);
+    const result = await deleteGalleryImage(id);
+    setGalleryLoading(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
   const hasLogo = !!profile.company_logo_url;
+
+  // Auto-grow "About the company" textarea to avoid scrollbar
+  useEffect(() => {
+    const ta = companyAboutRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${ta.scrollHeight}px`;
+  }, [companyAbout]);
 
   return (
     <div className="space-y-6">
@@ -174,7 +298,7 @@ export function ProfileForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="profile-form" onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">
                 {error}
@@ -255,13 +379,19 @@ export function ProfileForm({
                 <div className="space-y-2">
                   <Label htmlFor="companyAbout">About the company</Label>
                   <Textarea
+                    ref={companyAboutRef}
                     id="companyAbout"
                     placeholder="What your company does, culture, mission..."
                     value={companyAbout}
                     onChange={(e) => setCompanyAbout(e.target.value)}
-                    rows={4}
+                    onInput={(e) => {
+                      const ta = e.currentTarget;
+                      ta.style.height = "auto";
+                      ta.style.height = `${ta.scrollHeight}px`;
+                    }}
+                    rows={3}
                     disabled={loading}
-                    className="resize-none"
+                    className="min-h-[4.5rem] resize-none overflow-hidden"
                   />
                 </div>
                 <div className="space-y-2">
@@ -419,6 +549,210 @@ export function ProfileForm({
               )}
             </div>
           </CardContent>
+        </Card>
+      )}
+
+      {role === "employer" && (
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5" />
+              Benefits
+            </CardTitle>
+            <CardDescription>
+              Perks and benefits you offer. Shown on your company profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ul className="space-y-2">
+              {benefits.map((b) => (
+                <li
+                  key={b.id}
+                  className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-3"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{b.title}</p>
+                    {b.description && (
+                      <p className="text-muted-foreground text-sm mt-1">{b.description}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-destructive hover:text-destructive h-8 w-8"
+                    onClick={() => handleDeleteBenefit(b.id)}
+                    disabled={benefitLoading === b.id}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <form onSubmit={handleAddBenefit} className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Input
+                  name="title"
+                  placeholder="e.g. Health insurance"
+                  required
+                  disabled={!!benefitLoading}
+                />
+                <Input
+                  name="description"
+                  placeholder="Optional description"
+                  disabled={!!benefitLoading}
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                disabled={!!benefitLoading}
+              >
+                {benefitLoading === "add" ? "Adding…" : "Add benefit"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "employer" && (
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ListOrdered className="h-5 w-5" />
+              Hiring process
+            </CardTitle>
+            <CardDescription>
+              Steps in your hiring process. Shown on your company profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ol className="space-y-2 list-decimal list-inside">
+              {hiringSteps.map((step) => (
+                <li
+                  key={step.id}
+                  className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-3"
+                >
+                  <div>
+                    <span className="font-medium text-sm">{step.title}</span>
+                    {step.description && (
+                      <p className="text-muted-foreground text-sm mt-1">{step.description}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-destructive hover:text-destructive h-8 w-8"
+                    onClick={() => handleDeleteHiringStep(step.id)}
+                    disabled={hiringStepLoading === step.id}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ol>
+            <form onSubmit={handleAddHiringStep} className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Input
+                  name="title"
+                  placeholder="e.g. Phone screen"
+                  required
+                  disabled={!!hiringStepLoading}
+                />
+                <Input
+                  name="description"
+                  placeholder="Optional description"
+                  disabled={!!hiringStepLoading}
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                disabled={!!hiringStepLoading}
+              >
+                {hiringStepLoading === "add" ? "Adding…" : "Add step"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "employer" && (
+        <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImagePlus className="h-5 w-5" />
+              Gallery
+            </CardTitle>
+            <CardDescription>
+              Images for your company profile. JPG, PNG, WebP, GIF (max 2 MB each).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              {gallery.map((g) => (
+                <div
+                  key={g.id}
+                  className="relative group rounded-lg overflow-hidden border bg-muted/30 aspect-square w-24 shrink-0"
+                >
+                  <Image
+                    src={g.url}
+                    alt={g.caption || "Gallery"}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  {g.caption && (
+                    <p className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+                      {g.caption}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDeleteGalleryImage(g.id)}
+                    disabled={galleryLoading}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              {gallery.length < 12 && (
+                <div>
+                  <input
+                    type="file"
+                    accept={LOGO_ACCEPT}
+                    className="hidden"
+                    id="gallery-upload"
+                    onChange={handleAddGalleryImage}
+                    disabled={galleryLoading}
+                  />
+                  <label
+                    htmlFor="gallery-upload"
+                    className="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors aspect-square"
+                  >
+                    {galleryLoading ? (
+                      <span className="text-xs text-muted-foreground">Uploading…</span>
+                    ) : (
+                      <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </label>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          {role === "employer" && (
+            <div className="px-6 pb-6">
+              <Button type="submit" form="profile-form" disabled={loading}>
+                {loading ? "Saving…" : "Save profile"}
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 

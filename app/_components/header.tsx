@@ -54,6 +54,12 @@ export async function Header() {
               Jobs
             </Link>
             <Link
+              href="/companies"
+              className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
+            >
+              Companies
+            </Link>
+            <Link
               href="/blog"
               className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
             >

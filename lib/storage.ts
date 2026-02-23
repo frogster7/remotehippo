@@ -71,6 +71,13 @@ function makeBannerPath(userId: string, file: File): string {
   return `${userId}/banners/${unique}`;
 }
 
+/** Gallery path: {userId}/gallery/{timestamp}-{filename} */
+function makeGalleryPath(userId: string, file: File): string {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const unique = `${Date.now()}-${safeName}`;
+  return `${userId}/gallery/${unique}`;
+}
+
 /** Cover letter path: {userId}/cover-letters/{timestamp}-{filename} */
 function makeCoverLetterPath(userId: string, file: File): string {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -186,6 +193,39 @@ export async function uploadBanner(
   }
 
   const path = makeBannerPath(userId, file);
+  const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+  });
+  if (error) return { url: "", path: "", error: error.message };
+
+  const { data: urlData } = supabase.storage
+    .from(LOGO_BUCKET)
+    .getPublicUrl(path);
+  return { url: urlData.publicUrl, path, error: null };
+}
+
+/**
+ * Upload a company gallery image to company-logos bucket (subfolder gallery).
+ * Same validation as logos/banners: JPG, PNG, WebP, GIF, max 2 MB.
+ */
+export async function uploadGalleryImage(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File
+): Promise<{ url: string; path: string; error: string | null }> {
+  if (file.size > LOGO_MAX_BYTES) {
+    return { url: "", path: "", error: "Image must be 2 MB or smaller." };
+  }
+  if (!isAllowedLogoType(file.type)) {
+    return {
+      url: "",
+      path: "",
+      error: "Only JPG, PNG, WebP, and GIF images are allowed.",
+    };
+  }
+
+  const path = makeGalleryPath(userId, file);
   const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, file, {
     cacheControl: "3600",
     upsert: true,

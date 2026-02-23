@@ -171,6 +171,33 @@ export async function getSimilarJobs(
   return merged.slice(0, limit);
 }
 
+/** Attach first company banner URL to each job's employer. */
+async function attachEmployerBanners(jobs: Job[]): Promise<Job[]> {
+  const ids = [...new Set(jobs.map((j) => j.employer_id))];
+  if (ids.length === 0) return jobs;
+  const supabase = await createClient();
+  const { data: banners } = await supabase
+    .from("company_banners")
+    .select("employer_id, url, display_order")
+    .in("employer_id", ids)
+    .order("display_order", { ascending: true });
+  const firstByEmployer = new Map<string, string>();
+  const seen = new Set<string>();
+  for (const b of (banners ?? []) as { employer_id: string; url: string }[]) {
+    if (!seen.has(b.employer_id)) {
+      seen.add(b.employer_id);
+      firstByEmployer.set(b.employer_id, b.url);
+    }
+  }
+  return jobs.map((job) => {
+    const url = firstByEmployer.get(job.employer_id);
+    const employer = job.employer
+      ? { ...job.employer, banner_url: url ?? null }
+      : undefined;
+    return { ...job, employer };
+  });
+}
+
 /** Recent active jobs with employer info. Used for homepage "recently posted" section. */
 export async function getRecentJobs(limit = 6): Promise<Job[]> {
   const supabase = await createClient();
@@ -190,12 +217,92 @@ export async function getRecentJobs(limit = 6): Promise<Job[]> {
     .limit(limit);
 
   if (error) throw error;
-  return ((rows ?? []) as unknown[]).map((row) => {
+  const jobs = ((rows ?? []) as unknown[]).map((row) => {
     const { profiles, ...rest } = row as typeof row & {
       profiles: Job["employer"] | null;
     };
     return { ...rest, employer: profiles ?? undefined } as Job;
   });
+  return attachEmployerBanners(jobs);
+}
+
+/** Jobs from most-recommended employers (by company_experiences count). For homepage "Latest recommendations" slider. */
+export async function getJobsForLatestRecommendations(
+  limit = 12,
+): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data: expRows, error: expError } = await supabase
+    .from("company_experiences")
+    .select("employer_id")
+    .eq("status", "approved");
+  if (expError || !expRows?.length) return getRecentJobs(limit);
+
+  const countByEmployer = new Map<string, number>();
+  for (const row of expRows as { employer_id: string }[]) {
+    countByEmployer.set(
+      row.employer_id,
+      (countByEmployer.get(row.employer_id) ?? 0) + 1,
+    );
+  }
+  const employerIdsByRec = [...countByEmployer.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id);
+
+  if (employerIdsByRec.length === 0) return getRecentJobs(limit);
+
+  const { data: rows, error } = await supabase
+    .from("jobs")
+    .select(
+      `
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url)
+    `,
+    )
+    .eq("is_active", true)
+    .in("employer_id", employerIdsByRec)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  const jobs = ((rows ?? []) as unknown[]).map((row) => {
+    const { profiles, ...rest } = row as typeof row & {
+      profiles: Job["employer"] | null;
+    };
+    return { ...rest, employer: profiles ?? undefined } as Job;
+  });
+  return attachEmployerBanners(jobs);
+}
+
+/** Active jobs that have salary info (for homepage "Offers with salaries" section). */
+export async function getJobsWithSalaries(limit = 12): Promise<Job[]> {
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from("jobs")
+    .select(
+      `
+      id, employer_id, title, slug, description, tech_stack, role, work_type, job_type,
+      salary_min, salary_max, location, is_active, application_email, application_url, closed_at,
+      summary, responsibilities, requirements, what_we_offer, good_to_have, benefits, screening_questions,
+      created_at, updated_at,
+      profiles(id, full_name, company_name, company_website, company_logo_url)
+    `,
+    )
+    .eq("is_active", true)
+    .or("salary_min.not.is.null,salary_max.not.is.null")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  const jobs = ((rows ?? []) as unknown[]).map((row) => {
+    const { profiles, ...rest } = row as typeof row & {
+      profiles: Job["employer"] | null;
+    };
+    return { ...rest, employer: profiles ?? undefined } as Job;
+  });
+  return attachEmployerBanners(jobs);
 }
 
 /** Count of active jobs. Used for homepage hero. */
@@ -230,6 +337,187 @@ export async function getEmployerIdsWithActiveJobs(): Promise<string[]> {
   if (error) throw error;
   const ids = [...new Set((data ?? []).map((row) => row.employer_id))];
   return ids;
+}
+
+/** Company card data for discover sliders and search results. */
+export type CompanyCardData = {
+  id: string;
+  company_name: string | null;
+  full_name: string | null;
+  company_website: string | null;
+  company_logo_url: string | null;
+  banner_url: string | null;
+  job_count: number;
+  recommendations_count: number;
+  location_display: string;
+  benefits_count: number;
+};
+
+/** Fetch employer IDs with active jobs, then aggregate job count, locations, first banner, experiences count, benefits count. */
+async function getCompanyCardDataForIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  employerIds: string[],
+): Promise<CompanyCardData[]> {
+  if (employerIds.length === 0) return [];
+
+  const [profilesRes, jobsRes, experiencesRes, bannersRes, benefitsRes] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, company_name, full_name, company_website, company_logo_url")
+        .in("id", employerIds),
+      supabase
+        .from("jobs")
+        .select("employer_id, location")
+        .eq("is_active", true)
+        .in("employer_id", employerIds),
+      supabase
+        .from("company_experiences")
+        .select("employer_id")
+        .eq("status", "approved")
+        .in("employer_id", employerIds),
+      supabase
+        .from("company_banners")
+        .select("employer_id, url, display_order")
+        .in("employer_id", employerIds)
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("company_benefits")
+        .select("employer_id")
+        .in("employer_id", employerIds),
+    ]);
+
+  const profiles = (profilesRes.data ?? []) as {
+    id: string;
+    company_name: string | null;
+    full_name: string | null;
+    company_website: string | null;
+    company_logo_url: string | null;
+  }[];
+  const jobs = jobsRes.data ?? [];
+  const experiences = experiencesRes.data ?? [];
+  const banners = bannersRes.data ?? [];
+  const benefits = benefitsRes.data ?? [];
+
+  const jobCountByEmployer = new Map<string, number>();
+  const locationsByEmployer = new Map<string, string[]>();
+  for (const j of jobs as { employer_id: string; location: string | null }[]) {
+    jobCountByEmployer.set(
+      j.employer_id,
+      (jobCountByEmployer.get(j.employer_id) ?? 0) + 1,
+    );
+    if (j.location?.trim()) {
+      const locs = locationsByEmployer.get(j.employer_id) ?? [];
+      if (!locs.includes(j.location.trim())) locs.push(j.location.trim());
+      locationsByEmployer.set(j.employer_id, locs);
+    }
+  }
+
+  const recCountByEmployer = new Map<string, number>();
+  for (const e of experiences as { employer_id: string }[]) {
+    recCountByEmployer.set(
+      e.employer_id,
+      (recCountByEmployer.get(e.employer_id) ?? 0) + 1,
+    );
+  }
+
+  const firstBannerByEmployer = new Map<string, string>();
+  const seenBanner = new Set<string>();
+  for (const b of banners as { employer_id: string; url: string }[]) {
+    if (!seenBanner.has(b.employer_id)) {
+      seenBanner.add(b.employer_id);
+      firstBannerByEmployer.set(b.employer_id, b.url);
+    }
+  }
+
+  const benefitsCountByEmployer = new Map<string, number>();
+  for (const b of benefits as { employer_id: string }[]) {
+    benefitsCountByEmployer.set(
+      b.employer_id,
+      (benefitsCountByEmployer.get(b.employer_id) ?? 0) + 1,
+    );
+  }
+
+  function locationDisplay(employerId: string): string {
+    const locs = locationsByEmployer.get(employerId) ?? [];
+    if (locs.length === 0) return "";
+    const first = locs[0];
+    if (locs.length === 1) return first;
+    return `${first} (+${locs.length - 1} location${locs.length > 2 ? "s" : ""})`;
+  }
+
+  return profiles.map((p) => ({
+    id: p.id,
+    company_name: p.company_name,
+    full_name: p.full_name,
+    company_website: p.company_website,
+    company_logo_url: p.company_logo_url,
+    banner_url: firstBannerByEmployer.get(p.id) ?? null,
+    job_count: jobCountByEmployer.get(p.id) ?? 0,
+    recommendations_count: recCountByEmployer.get(p.id) ?? 0,
+    location_display: locationDisplay(p.id),
+    benefits_count: benefitsCountByEmployer.get(p.id) ?? 0,
+  }));
+}
+
+/** Companies for "They recruit the most" / "Most recommended" sliders. */
+export async function getCompaniesForDiscoverSection(
+  sortBy: "most_jobs" | "most_recommended",
+  limit: number,
+): Promise<CompanyCardData[]> {
+  const supabase = await createClient();
+  const { data: jobRows } = await supabase
+    .from("jobs")
+    .select("employer_id")
+    .eq("is_active", true);
+  const ids = [...new Set((jobRows ?? []).map((r) => r.employer_id))];
+  if (ids.length === 0) return [];
+
+  const cards = await getCompanyCardDataForIds(supabase, ids);
+
+  const sorted =
+    sortBy === "most_jobs"
+      ? [...cards].sort((a, b) => b.job_count - a.job_count)
+      : [...cards].sort(
+          (a, b) => b.recommendations_count - a.recommendations_count,
+        );
+
+  return sorted.slice(0, limit);
+}
+
+/** Employers for companies page: with card stats for sliders/cards. Optional search by name. */
+export async function getEmployersForCompaniesPage(
+  query?: string,
+): Promise<CompanyCardData[]> {
+  const supabase = await createClient();
+  const { data: jobEmployerIds } = await supabase
+    .from("jobs")
+    .select("employer_id")
+    .eq("is_active", true);
+  const ids = [...new Set((jobEmployerIds ?? []).map((r) => r.employer_id))];
+  if (ids.length === 0) return [];
+
+  let cards = await getCompanyCardDataForIds(supabase, ids);
+
+  cards = [...cards].sort((a, b) => {
+    const na =
+      (a.company_name ?? a.full_name ?? "").toLowerCase();
+    const nb =
+      (b.company_name ?? b.full_name ?? "").toLowerCase();
+    return na.localeCompare(nb);
+  });
+
+  if (query?.trim()) {
+    const term = query.trim().toLowerCase();
+    cards = cards.filter((p) => {
+      const name =
+        (p.company_name ?? "").toLowerCase() ||
+        (p.full_name ?? "").toLowerCase();
+      return name.includes(term);
+    });
+  }
+
+  return cards;
 }
 
 /** Employers worth knowing: recent employers with active jobs (for homepage). */
@@ -321,11 +609,13 @@ export async function getEmployerPublicProfile(profileId: string): Promise<{
   company_name: string | null;
   company_website: string | null;
   company_logo_url: string | null;
+  company_about: string | null;
+  company_location: string | null;
 } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, company_name, company_website, company_logo_url")
+    .select("id, full_name, company_name, company_website, company_logo_url, company_about, company_location")
     .eq("id", profileId)
     .single();
   if (error || !data) return null;
@@ -335,6 +625,8 @@ export async function getEmployerPublicProfile(profileId: string): Promise<{
     company_name: string | null;
     company_website: string | null;
     company_logo_url: string | null;
+    company_about: string | null;
+    company_location: string | null;
   };
 }
 

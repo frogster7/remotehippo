@@ -81,7 +81,7 @@ export function JobCard({
   const showApply = !applyProps.isClosed && !!applyHref;
 
   return (
-    <Card className="group rounded-3xl border border-primary/50 bg-card shadow-sm">
+    <Card className="group rounded-3xl border border-transparent bg-card shadow-md transition-colors hover:border-primary/50">
       <CardHeader>
         <div className="flex items-start gap-4">
           {/* Company logo – top left */}

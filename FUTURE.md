@@ -28,3 +28,15 @@ Items to implement later. Not in current scope.
    - MVP: one subscription per user (one set of filters). Optional later: multiple named alerts per user.
 
 **References:** PROJECT_BRIEF §3.3 (“Subscribe/unsubscribe to job alerts (email later)”); BUILD_LOG “Post-MVP enhancements” for Steps 1–4 already done.
+
+---
+
+## 6. Recently viewed (homepage)
+
+**Status:** Mock for now.
+
+**Current behaviour:** The “Recently viewed” section on the homepage reuses the first 6 items from recent jobs as placeholder data.
+
+**Goal:** Replace with real “recently viewed” data so the section shows jobs the user has actually viewed.
+
+**Suggested approach:** Persist viewed job IDs (and optionally timestamps) per user, e.g. via cookies or user history (e.g. a `recently_viewed_jobs` table or client-side storage), then fetch those jobs for the section when rendering the homepage.
