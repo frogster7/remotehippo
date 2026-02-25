@@ -10,7 +10,6 @@ import {
   Briefcase,
   Building2,
   ChevronDown,
-  FileInput,
   FileText,
   Heart,
   Home,
@@ -113,7 +112,6 @@ export function HeaderNav({
         { href: applicationsHref, label: "My applications", icon: Briefcase },
         { href: savedJobsHref, label: "Saved", icon: Heart },
         { href: documentsHref, label: "Documents", icon: FileText },
-        { href: documentsHref, label: "CV Creator", icon: FileInput },
         { href: notificationsPanelHref, label: "Notifications", icon: BellRing },
       ];
 
@@ -157,7 +155,7 @@ export function HeaderNav({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 rounded-full bg-muted/70 text-[#202557] hover:bg-muted transition-colors"
+                  className="h-9 w-9 rounded-full bg-muted/70 text-foreground transition-colors hover:bg-muted"
                   aria-label="Saved jobs"
                 >
                   <Heart className="h-4 w-4" />
@@ -179,14 +177,16 @@ export function HeaderNav({
                         className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-muted/50"
                       >
                         {job.employer?.company_logo_url ? (
-                          <Image
-                            src={job.employer.company_logo_url}
-                            alt=""
-                            width={36}
-                            height={36}
-                            className="rounded-lg object-cover shrink-0"
-                            unoptimized
-                          />
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-0.5 dark:bg-white">
+                            <Image
+                              src={job.employer.company_logo_url}
+                              alt=""
+                              width={36}
+                              height={36}
+                              className="h-full w-full rounded-lg object-contain"
+                              unoptimized
+                            />
+                          </div>
                         ) : (
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
                             {companyName.slice(0, 2).toUpperCase()}
@@ -205,7 +205,7 @@ export function HeaderNav({
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={savedJobsHref} className="text-[#202557] cursor-pointer">
+                  <Link href={savedJobsHref} className="cursor-pointer text-foreground">
                     View all
                   </Link>
                 </DropdownMenuItem>
@@ -218,7 +218,7 @@ export function HeaderNav({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-9 w-9 rounded-full bg-muted/70 text-[#202557] hover:bg-muted transition-colors"
+                  className="relative h-9 w-9 rounded-full bg-muted/70 text-foreground transition-colors hover:bg-muted"
                   aria-label={
                     unreadNotificationCount > 0
                       ? `Notifications (${unreadNotificationCount} unread)`
@@ -316,7 +316,7 @@ export function HeaderNav({
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
                     <User className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="truncate text-sm font-semibold text-[#202557]">
+                  <span className="truncate text-sm font-semibold text-foreground">
                     {user.email ?? "Account"}
                   </span>
                 </div>
@@ -327,7 +327,7 @@ export function HeaderNav({
                     <DropdownMenuItem key={item.href + item.label} asChild>
                       <Link
                         href={item.href}
-                        className="flex items-center gap-2 text-[#202557] cursor-pointer"
+                        className="flex cursor-pointer items-center gap-2 text-foreground"
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         {item.label}
@@ -336,7 +336,7 @@ export function HeaderNav({
                   );
                 })}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-[#202557] cursor-pointer">
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-foreground">
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -346,13 +346,13 @@ export function HeaderNav({
           <>
             <Link
               href="/login"
-              className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
+              className="font-medium text-foreground transition-colors hover:text-foreground/80"
             >
               Log in
             </Link>
             <Link
               href="/register"
-              className="text-[#202557] font-semibold hover:text-[#202557]/80 transition-colors"
+              className="font-semibold text-foreground transition-colors hover:text-foreground/80"
             >
               Sign up
             </Link>

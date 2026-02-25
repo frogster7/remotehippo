@@ -132,7 +132,7 @@ export default async function JobDetailPage({ params }: Props) {
           {/* Main content - grows to fill container up to 1200px total */}
           <article className="min-w-0 space-y-5 lg:col-span-2">
             {/* Hero card: title, position, job type & meta */}
-            <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+            <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
               <CardContent className="p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex flex-col gap-2">
@@ -178,7 +178,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Technologies we use - own card above Summary */}
             {(job.tech_stack?.length ?? 0) > 0 && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-3 text-base font-semibold text-heading">
                     Technologies we use
@@ -199,7 +199,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Structured section cards */}
             {job.summary?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Summary
@@ -209,7 +209,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.responsibilities?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Responsibilities
@@ -219,7 +219,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.requirements?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Requirements
@@ -229,7 +229,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.what_we_offer?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     What we offer
@@ -239,7 +239,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.good_to_have?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Good to have
@@ -249,7 +249,7 @@ export default async function JobDetailPage({ params }: Props) {
               </Card>
             )}
             {job.benefits?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Benefits
@@ -261,7 +261,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Optional description */}
             {job.description?.trim() && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   <h3 className="mb-2 text-base font-semibold text-heading">
                     Description
@@ -275,7 +275,7 @@ export default async function JobDetailPage({ params }: Props) {
 
             {/* Apply CTA at bottom of main column (hidden for employers) */}
             {!isEmployer && applyProps && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-6">
                   {applyProps.isClosed ? (
                     <p className="text-sm text-muted-foreground">
@@ -309,18 +309,20 @@ export default async function JobDetailPage({ params }: Props) {
           {/* Sidebar: company, apply, similar jobs */}
           <aside className="w-full space-y-6 lg:sticky lg:top-6 lg:col-span-1 lg:self-start">
             {job.employer && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-5">
                   <div className="flex flex-wrap items-center gap-3">
                     {job.employer.company_logo_url ? (
-                      <Image
-                        src={job.employer.company_logo_url}
-                        alt=""
-                        width={65}
-                        height={65}
-                        className="h-[65px] max-h-[65px] w-[65px] max-w-[65px] shrink-0 rounded-lg object-contain"
-                        unoptimized
-                      />
+                      <div className="flex h-[65px] w-[65px] shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-1.5 dark:bg-white">
+                        <Image
+                          src={job.employer.company_logo_url}
+                          alt=""
+                          width={65}
+                          height={65}
+                          className="h-[65px] max-h-[65px] w-[65px] max-w-[65px] shrink-0 rounded-lg object-contain"
+                          unoptimized
+                        />
+                      </div>
                     ) : (
                       <div className="flex h-[65px] w-[65px] shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium text-muted-foreground">
                         {companyName.slice(0, 2).toUpperCase()}
@@ -365,7 +367,7 @@ export default async function JobDetailPage({ params }: Props) {
               />
             )}
             {similarJobs.length > 0 && (
-              <Card className="overflow-hidden rounded-3xl border-0 bg-[#fdfdfc] shadow-md">
+              <Card className="overflow-hidden rounded-3xl border-0 bg-card shadow-md">
                 <CardContent className="p-5">
                   <h3 className="text-base font-semibold text-heading">
                     Similar offers
@@ -388,7 +390,7 @@ export default async function JobDetailPage({ params }: Props) {
                                 alt=""
                                 width={48}
                                 height={48}
-                                className="h-12 w-12 shrink-0 rounded-lg border border-border/70 object-contain bg-background"
+                                className="h-12 w-12 shrink-0 rounded-lg border border-border/70 bg-background object-contain dark:bg-white"
                                 unoptimized
                               />
                             ) : (

@@ -34,7 +34,7 @@ function CompanyCard({
 
   return (
     <HydrationSafeDiv
-      className="relative flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-primary/100 bg-[#fdfdfc] shadow-md scroll-snap-align-start"
+      className="relative flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-primary/100 bg-card shadow-md scroll-snap-align-start"
       style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.06)" }}
     >
       {/* Top patterned area – same as Recently posted cards */}
@@ -62,7 +62,7 @@ function CompanyCard({
         {/* Logo – top left */}
         <Link
           href={`/employer/${employer.id}`}
-          className="absolute left-4 top-4 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm"
+          className="absolute left-4 top-4 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-card shadow-sm dark:bg-white"
         >
           {employer.company_logo_url ? (
             <Image
@@ -70,7 +70,7 @@ function CompanyCard({
               alt=""
               width={48}
               height={48}
-              className="object-contain p-1"
+              className="h-full w-full object-contain"
             />
           ) : (
             <span className="text-sm font-semibold text-primary">

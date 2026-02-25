@@ -143,11 +143,11 @@ export default async function EmployerDashboardPage({
     profile?.company_name ?? profile?.full_name ?? "Your company";
 
   return (
-    <main className="min-h-screen bg-[#f4f5fb]">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {activePanel === "home" ? (
           <div className="mb-8">
-            <h1 className="text-[2rem] font-semibold tracking-tight text-[#202557]">
+            <h1 className="text-[2rem] font-semibold tracking-tight text-heading">
               {getGreeting()}
             </h1>
             <p className="mt-2 text-muted-foreground">
@@ -158,20 +158,22 @@ export default async function EmployerDashboardPage({
 
         <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="h-fit lg:sticky lg:top-20">
-            <Card className="rounded-2xl border border-border/60 bg-white">
+            <Card className="rounded-2xl border border-border/60 bg-card">
               <CardContent className="p-4">
                 <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 p-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                       {profile?.company_logo_url ? (
-                        <Image
-                          src={profile.company_logo_url}
-                          alt=""
-                          width={44}
-                          height={44}
-                          className="rounded-full object-cover"
-                          unoptimized
-                        />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background p-0.5 dark:bg-white">
+                          <Image
+                            src={profile.company_logo_url}
+                            alt=""
+                            width={44}
+                            height={44}
+                            className="h-full w-full rounded-full object-contain"
+                            unoptimized
+                          />
+                        </div>
                       ) : (
                         <Building2 className="h-5 w-5" />
                       )}
@@ -244,7 +246,7 @@ export default async function EmployerDashboardPage({
             {activePanel === "home" ? (
               <>
                 <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <Card className="h-full rounded-2xl border border-border/50 bg-white shadow-sm">
+                  <Card className="h-full rounded-2xl border border-border/50 bg-card shadow-sm">
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <Briefcase className="h-6 w-6 text-primary" />
@@ -257,7 +259,7 @@ export default async function EmployerDashboardPage({
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="h-full rounded-2xl border border-border/50 bg-white shadow-sm">
+                  <Card className="h-full rounded-2xl border border-border/50 bg-card shadow-sm">
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <BarChart3 className="h-6 w-6 text-primary" />
@@ -270,7 +272,7 @@ export default async function EmployerDashboardPage({
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="h-full rounded-2xl border border-border/50 bg-white shadow-sm">
+                  <Card className="h-full rounded-2xl border border-border/50 bg-card shadow-sm">
                     <CardContent className="flex items-center gap-4 p-5">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                         <BarChart3 className="h-6 w-6 text-primary" />
@@ -302,7 +304,7 @@ export default async function EmployerDashboardPage({
                   </Card>
                 </section>
 
-                <Card className="rounded-2xl border border-border/50 bg-white shadow-sm">
+                <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
                   <CardContent className="p-5">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
                       <h3 className="text-lg font-semibold text-heading">
@@ -363,7 +365,7 @@ export default async function EmployerDashboardPage({
               <>
                 <div className="mb-4 flex flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-4">
-                    <h2 className="text-[2rem] font-semibold text-[#202557]">
+                    <h2 className="text-[2rem] font-semibold text-heading">
                       {panelTitle[activePanel]}
                     </h2>
                     <div className="flex items-center gap-2">
@@ -386,7 +388,7 @@ export default async function EmployerDashboardPage({
                   </div>
                 </div>
 
-                <Card className="rounded-2xl border border-border/60 bg-white shadow-sm">
+                <Card className="rounded-2xl border border-border/60 bg-card shadow-sm">
                   <CardContent className="p-5">
                     {activePanel === "listings" && (
                       jobs.length === 0 ? (

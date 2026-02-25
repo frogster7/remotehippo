@@ -18,6 +18,24 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const callbackUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl },
+    });
+    setGoogleLoading(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    // Supabase redirects to Google; after auth, user is sent to /auth/callback then redirectTo
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,7 +59,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
     <Card className="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>Use your email and password.</CardDescription>
+        <CardDescription>Use your email and password or sign in with Google.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,6 +96,17 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in…" : "Log in"}
           </Button>
+          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={loading || googleLoading}
+              onClick={handleGoogleSignIn}
+            >
+              {googleLoading ? "Redirecting…" : "Sign in with Google"}
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUnreadNotificationCount, getNotifications } from "@/lib/notifications";
 import { getFavoritedJobs } from "@/lib/jobs";
 import { HeaderNav } from "./header-nav";
+import { ThemeToggle } from "./theme-toggle";
 
 export async function Header() {
   const supabase = await createClient();
@@ -49,32 +50,35 @@ export async function Header() {
           <nav className="hidden md:flex items-center gap-5 text-base">
             <Link
               href="/jobs"
-              className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
+              className="font-medium text-foreground transition-colors hover:text-foreground/80"
             >
               Jobs
             </Link>
             <Link
               href="/companies"
-              className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
+              className="font-medium text-foreground transition-colors hover:text-foreground/80"
             >
               Companies
             </Link>
             <Link
               href="/blog"
-              className="text-[#202557] hover:text-[#202557]/80 font-medium transition-colors"
+              className="font-medium text-foreground transition-colors hover:text-foreground/80"
             >
               Blog
             </Link>
           </nav>
         </div>
-        <HeaderNav
-          user={user ? { id: user.id, email: user.email ?? null } : null}
-          isEmployer={profile?.role === "employer"}
-          firstName={firstName}
-          unreadNotificationCount={unreadNotificationCount}
-          notifications={notifications}
-          savedJobs={savedJobs}
-        />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <HeaderNav
+            user={user ? { id: user.id, email: user.email ?? null } : null}
+            isEmployer={profile?.role === "employer"}
+            firstName={firstName}
+            unreadNotificationCount={unreadNotificationCount}
+            notifications={notifications}
+            savedJobs={savedJobs}
+          />
+        </div>
       </div>
     </header>
   );

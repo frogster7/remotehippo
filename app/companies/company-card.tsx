@@ -35,14 +35,14 @@ export function CompanyCard({ company }: { company: CompanyCardData }) {
           />
         )}
         {/* Logo overlay bottom-left */}
-        <div className="absolute bottom-3 left-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+        <div className="absolute bottom-3 left-3 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-card shadow-sm dark:bg-white">
           {company.company_logo_url ? (
             <Image
               src={company.company_logo_url}
               alt=""
               width={56}
               height={56}
-              className="object-contain p-1"
+              className="h-full w-full object-contain"
             />
           ) : (
             <span className="text-sm font-semibold text-primary">

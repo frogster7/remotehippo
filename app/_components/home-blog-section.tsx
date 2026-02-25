@@ -30,10 +30,10 @@ const MOCK_POSTS = [
   },
 ];
 
-/** Zero-based position in the list of sections. Even = white bg, odd = muted. */
+/** Zero-based position in the list of sections. Even = base background, odd = muted. */
 export function HomeBlogSection({ sectionIndex }: { sectionIndex: number }) {
   const isWhite = sectionIndex % 2 === 0;
-  const sectionClassName = isWhite ? "bg-white" : "bg-muted/50";
+  const sectionClassName = isWhite ? "bg-background" : "bg-muted/50";
   return (
     <section className={`py-8 md:py-10 pb-[15vh] ${sectionClassName}`}>
       <div className="container mx-auto px-4">

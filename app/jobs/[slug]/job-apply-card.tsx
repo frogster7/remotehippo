@@ -17,7 +17,7 @@ export function JobApplyCard({
   applyLabel,
 }: JobApplyCardProps) {
   return (
-    <div className="rounded-3xl bg-[#fdfdfc] p-5 shadow-md">
+    <div className="rounded-3xl bg-card p-5 shadow-md">
       {isClosed ? (
         <p className="text-sm text-muted-foreground">
           This position has been filled. Applications are no longer accepted.

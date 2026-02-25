@@ -190,12 +190,13 @@ export function CompanyRegisterForm() {
             </p>
             {logoPreview ? (
               <div className="flex flex-wrap items-center gap-4">
-                <div className="relative h-20 w-20 overflow-hidden rounded-lg border bg-muted">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-border/70 bg-background p-1 dark:bg-white">
                   <Image
                     src={logoPreview}
                     alt="Logo preview"
-                    fill
-                    className="object-contain"
+                    width={80}
+                    height={80}
+                    className="h-20 w-20 object-contain"
                     unoptimized
                   />
                 </div>

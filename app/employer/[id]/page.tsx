@@ -117,7 +117,7 @@ export default async function EmployerPublicPage({ params }: Props) {
 
         {/* Sticky section nav (only when there are sections to show) */}
         {visibleSectionIds.length > 0 && (
-          <div className="sticky top-0 z-20 -mx-4 mb-6 bg-[#f5f6f7] px-4 py-2">
+          <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border/50 bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <CompanyPageNav visibleSectionIds={visibleSectionIds} />
           </div>
         )}
@@ -125,7 +125,7 @@ export default async function EmployerPublicPage({ params }: Props) {
         {/* Company logo, name, and stats badges */}
         <header className="mb-8 flex flex-wrap items-start gap-4">
           {profile.company_logo_url ? (
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-background p-2">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-background p-2 dark:bg-white">
               <Image
                 src={profile.company_logo_url}
                 alt=""
@@ -141,7 +141,7 @@ export default async function EmployerPublicPage({ params }: Props) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-[#0d1b2a] sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-heading sm:text-3xl">
               {companyName}
             </h1>
             {profile.company_location?.trim() && (

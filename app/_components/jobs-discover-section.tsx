@@ -41,10 +41,10 @@ export function JobsDiscoverSection({
 
   const scroll = (dir: "left" | "right") => smoothScroll(dir, STEP);
 
-  /** Every other section (0, 2, 4...) has white bg so pattern stays correct regardless of which sections render. */
+  /** Every other section uses card-ish background for subtle alternation in both themes. */
   const isWhite = sectionIndex % 2 === 0;
-  const sectionClassName = isWhite ? "bg-white" : "bg-muted/50";
-  const fadeFromClassName = isWhite ? "from-white" : "from-muted/50";
+  const sectionClassName = isWhite ? "bg-background" : "bg-muted/50";
+  const fadeFromClassName = isWhite ? "from-background" : "from-muted/50";
 
   /** Same horizontal start as hero content so first card lines up. */
   const sliderPaddingLeft = `max(1rem, calc((100vw - ${CONTAINER_XL}px) / 2 + ${HERO_CONTENT_INSET_PX}px))`;

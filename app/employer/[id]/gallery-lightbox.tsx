@@ -134,10 +134,13 @@ export function GalleryLightbox({ items }: Props) {
               key={index}
               className="relative max-h-[65vh] w-full flex-1 animate-in fade-in-0 duration-300"
             >
-              <img
+              <Image
                 src={current.url}
                 alt={current.caption ?? "Gallery image"}
-                className="max-h-[65vh] w-full object-contain"
+                fill
+                className="object-contain"
+                sizes="(max-width: 896px) 100vw, 896px"
+                unoptimized
               />
             </div>
             {current.caption?.trim() && (
@@ -166,10 +169,13 @@ export function GalleryLightbox({ items }: Props) {
                   aria-label={`View image ${i + 1}`}
                   aria-current={i === index ? "true" : undefined}
                 >
-                  <img
+                  <Image
                     src={item.url}
                     alt=""
+                    width={80}
+                    height={56}
                     className="h-full w-full object-cover"
+                    unoptimized
                   />
                 </button>
               ))}

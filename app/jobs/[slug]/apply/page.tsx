@@ -104,7 +104,7 @@ export default async function ApplyPage({ params }: Props) {
         <div className="mb-4 overflow-hidden rounded-xl border border-primary/30 bg-form-card p-5 shadow-lg">
           <div className="flex flex-wrap items-center gap-3">
             {job.employer?.company_logo_url ? (
-              <div className="flex h-12 w-12 max-h-12 max-w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted/30">
+              <div className="flex h-12 w-12 max-h-12 max-w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted/30 dark:bg-white">
                 <Image
                   src={job.employer.company_logo_url}
                   alt=""

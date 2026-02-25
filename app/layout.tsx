@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Open_Sans, Work_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Header } from "./_components/header";
 import { Footer } from "./_components/footer";
@@ -49,11 +50,37 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${openSans.variable} ${workSans.variable}`}>
+    <html
+      lang="en"
+      className={`${openSans.variable} ${workSans.variable}`}
+      suppressHydrationWarning
+    >
       <body
         className={`${openSans.className} antialiased`}
         suppressHydrationWarning
       >
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(() => {
+  try {
+    const key = "theme";
+    const stored = localStorage.getItem(key);
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : systemDark
+          ? "dark"
+          : "light";
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    root.style.colorScheme = theme;
+  } catch {
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.classList.toggle("dark", systemDark);
+    document.documentElement.style.colorScheme = systemDark ? "dark" : "light";
+  }
+})();`}
+        </Script>
         <div className="flex min-h-screen flex-col" suppressHydrationWarning>
           <Header />
           <div className="flex-1">{children}</div>

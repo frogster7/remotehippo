@@ -88,15 +88,15 @@ export function JobCard({
           {job.employer?.company_logo_url ? (
             <Link
               href={`/jobs/${job.slug}`}
-              className="relative shrink-0 overflow-hidden rounded-2xl border border-border/70 bg-background p-2"
+              className="relative flex h-[58px] w-[58px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-background dark:bg-white"
             >
               {canUseNextImageForUrl(job.employer.company_logo_url) ? (
                 <Image
                   src={job.employer.company_logo_url}
                   alt=""
-                  width={220}
-                  height={220}
-                  className="h-auto max-h-[58px] w-auto max-w-[58px] object-contain"
+                  width={58}
+                  height={58}
+                  className="h-full w-full object-contain"
                 />
               ) : (
                 // Use a plain <img> for unknown hosts to avoid next/image remote host errors.
@@ -104,14 +104,14 @@ export function JobCard({
                 <img
                   src={job.employer.company_logo_url}
                   alt=""
-                  className="h-auto max-h-[58px] w-auto max-w-[58px] object-contain"
+                  className="h-full w-full object-contain"
                   loading="lazy"
                 />
               )}
             </Link>
           ) : (
             <div
-              className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-muted text-sm font-semibold text-muted-foreground"
+              className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-muted text-sm font-semibold text-muted-foreground"
               aria-hidden
             >
               {(job.employer?.company_name ?? job.employer?.full_name ?? "?")

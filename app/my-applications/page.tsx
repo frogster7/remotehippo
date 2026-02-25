@@ -84,14 +84,14 @@ export default async function MyApplicationsPage() {
               return (
                 <Card
                   key={app.id}
-                  className="rounded-3xl border border-primary/100 bg-[#fdfdfc] shadow-sm"
+                  className="rounded-3xl border border-primary/100 bg-card shadow-sm"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       {/* Company logo */}
                       <div className="flex-shrink-0">
                         {job.employer?.company_logo_url ? (
-                          <div className="rounded-xl border border-border/70 bg-background p-1.5">
+                          <div className="rounded-xl border border-border/70 bg-background p-1.5 dark:bg-white">
                             <Image
                               src={job.employer.company_logo_url}
                               alt=""

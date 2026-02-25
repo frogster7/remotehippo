@@ -94,10 +94,7 @@ export function DiscoverJobCard({
 
       {/* Content: title, company name, time, specialization */}
       <div className="flex flex-1 flex-col p-4 pt-7">
-        <h3
-          className="font-heading text-lg font-bold leading-tight line-clamp-2"
-          style={{ color: "#202557" }}
-        >
+        <h3 className="line-clamp-2 font-heading text-lg font-bold leading-tight text-heading">
           {job.title}
         </h3>
         <p className="mt-1.5 text-sm text-muted-foreground line-clamp-1">
@@ -114,7 +111,7 @@ export function DiscoverJobCard({
       </div>
 
       {/* Logo – 50% over banner, 50% into content; direct child of card + z-10 so it paints in front */}
-      <div className="absolute left-3 top-[4.5rem] z-10 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+      <div className="absolute left-3 top-[4.5rem] z-10 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm">
         {job.employer?.company_logo_url ? (
           canUseNextImageForUrl(job.employer.company_logo_url) ? (
             <Image
@@ -122,14 +119,14 @@ export function DiscoverJobCard({
               alt=""
               width={48}
               height={48}
-              className="object-contain p-1"
+              className="h-full w-full object-contain"
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={job.employer.company_logo_url}
               alt=""
-              className="h-12 w-12 object-contain p-1"
+              className="h-full w-full object-contain"
               loading="lazy"
             />
           )

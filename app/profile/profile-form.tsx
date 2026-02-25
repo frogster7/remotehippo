@@ -428,14 +428,16 @@ export function ProfileForm({
           <CardContent className="space-y-4">
             {hasLogo ? (
               <div className="flex flex-wrap items-center gap-4">
-                <Image
-                  src={profile.company_logo_url!}
-                  alt="Company logo"
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 object-contain rounded border bg-muted"
-                  unoptimized
-                />
+                <div className="flex h-20 w-20 items-center justify-center rounded border border-border/70 bg-background p-1 dark:bg-white">
+                  <Image
+                    src={profile.company_logo_url!}
+                    alt="Company logo"
+                    width={80}
+                    height={80}
+                    className="h-20 w-20 rounded object-contain"
+                    unoptimized
+                  />
+                </div>
                 <div className="flex gap-2">
                   <input
                     ref={logoInputRef}

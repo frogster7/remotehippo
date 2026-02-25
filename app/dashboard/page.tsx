@@ -177,11 +177,11 @@ export default async function DashboardPage({
   const jobsInSavedSearches = tailoredJobs.length;
 
   return (
-    <main className="min-h-screen bg-[#f4f5fb]">
+    <main className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {activePanel === "home" ? (
           <div className="mb-8">
-            <h1 className="text-[2rem] font-semibold tracking-tight text-[#202557]">
+            <h1 className="text-[2rem] font-semibold tracking-tight text-heading">
               {getGreeting()}
             </h1>
             <p className="mt-2 text-muted-foreground">
@@ -192,7 +192,7 @@ export default async function DashboardPage({
 
         <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="h-fit lg:sticky lg:top-20">
-            <Card className="rounded-2xl border border-border/60 bg-white">
+            <Card className="rounded-2xl border border-border/60 bg-card">
               <CardContent className="p-4">
                 <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 p-3">
                   <div className="flex items-center gap-3">
@@ -248,7 +248,7 @@ export default async function DashboardPage({
               <>
                 <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <Link href="/dashboard?panel=saved-searches">
-                    <Card className="h-full rounded-2xl border border-border/50 bg-white shadow-sm transition-colors hover:bg-muted/30">
+                    <Card className="h-full rounded-2xl border border-border/50 bg-card shadow-sm transition-colors hover:bg-muted/30">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                           <Search className="h-6 w-6 text-primary" />
@@ -263,7 +263,7 @@ export default async function DashboardPage({
                     </Card>
                   </Link>
                   <Link href="/dashboard?panel=saved-jobs">
-                    <Card className="h-full rounded-2xl border border-border/50 bg-white shadow-sm transition-colors hover:bg-muted/30">
+                    <Card className="h-full rounded-2xl border border-border/50 bg-card shadow-sm transition-colors hover:bg-muted/30">
                       <CardContent className="flex items-center gap-4 p-5">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                           <Heart className="h-6 w-6 text-primary fill-primary" />
@@ -293,7 +293,7 @@ export default async function DashboardPage({
                 </section>
 
                 <section className="mb-6 grid gap-6 lg:grid-cols-2">
-                  <Card className="rounded-2xl border border-border/50 bg-white shadow-sm">
+                  <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
                     <CardContent className="p-5">
                       <h3 className="text-lg font-semibold text-heading">
                         Last chance to send your CV! 🔥
@@ -315,14 +315,16 @@ export default async function DashboardPage({
                                 className="flex items-center gap-3 rounded-xl border border-border/60 p-3 transition-colors hover:bg-muted/50"
                               >
                                 {job.employer?.company_logo_url ? (
-                                  <Image
-                                    src={job.employer.company_logo_url}
-                                    alt=""
-                                    width={56}
-                                    height={56}
-                                    className="max-w-[56px] max-h-[56px] rounded-lg object-cover shrink-0"
-                                    unoptimized
-                                  />
+                                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-1 dark:bg-white">
+                                    <Image
+                                      src={job.employer.company_logo_url}
+                                      alt=""
+                                      width={56}
+                                      height={56}
+                                      className="max-h-[56px] max-w-[56px] rounded-lg object-contain"
+                                      unoptimized
+                                    />
+                                  </div>
                                 ) : (
                                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
                                     {companyName.slice(0, 2).toUpperCase()}
@@ -344,7 +346,7 @@ export default async function DashboardPage({
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-2xl border border-border/50 bg-white shadow-sm">
+                  <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
                     <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                       <h3 className="text-lg font-semibold text-heading">
                         Status of your applications
@@ -363,7 +365,7 @@ export default async function DashboardPage({
                   </Card>
                 </section>
 
-                <Card className="rounded-2xl border border-border/50 bg-white shadow-sm">
+                <Card className="rounded-2xl border border-border/50 bg-card shadow-sm">
                   <CardContent className="p-5">
                     <div className="mb-4 flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-heading">Offers tailored to you</h3>
@@ -393,14 +395,16 @@ export default async function DashboardPage({
                               className="flex items-center gap-3 rounded-xl border border-border/60 p-3 transition-colors hover:bg-muted/50"
                             >
                               {job.employer?.company_logo_url ? (
-                                <Image
-                                  src={job.employer.company_logo_url}
-                                  alt=""
-                                  width={56}
-                                  height={56}
-                                  className="max-w-[56px] max-h-[56px] rounded-lg object-cover shrink-0"
-                                  unoptimized
-                                />
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-1 dark:bg-white">
+                                  <Image
+                                    src={job.employer.company_logo_url}
+                                    alt=""
+                                    width={56}
+                                    height={56}
+                                    className="max-h-[56px] max-w-[56px] rounded-lg object-contain"
+                                    unoptimized
+                                  />
+                                </div>
                               ) : (
                                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
                                   {companyName.slice(0, 2).toUpperCase()}
@@ -426,7 +430,7 @@ export default async function DashboardPage({
               <>
             <div className="mb-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-[2rem] font-semibold text-[#202557]">
+                <h2 className="text-[2rem] font-semibold text-heading">
                   {activePanel === "documents" ? "Documents" : panelTitle[activePanel]}
                 </h2>
                 {activePanel !== "edit-profile" && (
@@ -448,7 +452,7 @@ export default async function DashboardPage({
               )}
             </div>
 
-            <Card className="rounded-2xl border border-border/60 bg-white shadow-sm">
+            <Card className="rounded-2xl border border-border/60 bg-card shadow-sm">
               <CardContent className="p-5">
                 {activePanel === "offers" && (
                   tailoredJobs.length === 0 ? (
@@ -466,14 +470,16 @@ export default async function DashboardPage({
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3">
                                 {job.employer?.company_logo_url ? (
-                                  <Image
-                                    src={job.employer.company_logo_url}
-                                    alt=""
-                                    width={56}
-                                    height={56}
-                                    className="max-w-[56px] max-h-[56px] rounded-lg object-cover"
-                                    unoptimized
-                                  />
+                                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-1 dark:bg-white">
+                                    <Image
+                                      src={job.employer.company_logo_url}
+                                      alt=""
+                                      width={56}
+                                      height={56}
+                                      className="max-h-[56px] max-w-[56px] rounded-lg object-contain"
+                                      unoptimized
+                                    />
+                                  </div>
                                 ) : (
                                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
                                     {companyName.slice(0, 2).toUpperCase()}
@@ -555,14 +561,16 @@ export default async function DashboardPage({
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3">
                                 {job.employer?.company_logo_url ? (
-                                  <Image
-                                    src={job.employer.company_logo_url}
-                                    alt=""
-                                    width={56}
-                                    height={56}
-                                    className="max-w-[56px] max-h-[56px] rounded-lg object-cover shrink-0"
-                                    unoptimized
-                                  />
+                                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background p-1 dark:bg-white">
+                                    <Image
+                                      src={job.employer.company_logo_url}
+                                      alt=""
+                                      width={56}
+                                      height={56}
+                                      className="max-h-[56px] max-w-[56px] rounded-lg object-contain"
+                                      unoptimized
+                                    />
+                                  </div>
                                 ) : (
                                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
                                     {companyName.slice(0, 2).toUpperCase()}

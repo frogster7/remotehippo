@@ -197,7 +197,7 @@ export function HomeHero({ jobCount, roles, tech }: HomeHeroProps) {
             </HydrationSafeDiv>
           </form>
 
-          <HydrationSafeDiv className="mt-6 rounded-2xl border border-primary/100 bg-[#fdfdfc] p-5 shadow-sm backdrop-blur sm:p-6">
+          <HydrationSafeDiv className="mt-6 rounded-2xl border border-primary/40 bg-card/95 p-5 shadow-sm backdrop-blur sm:p-6">
             <div className="space-y-5">
               <div>
                 <p className="text-sm font-medium text-foreground">
