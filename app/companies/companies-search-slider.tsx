@@ -31,7 +31,7 @@ export function CompaniesSearchSlider({
     setShowRightFade(
       el.scrollLeft < el.scrollWidth - el.clientWidth - FADE_THRESHOLD
     );
-  }, []);
+  }, [scrollRef]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -44,7 +44,7 @@ export function CompaniesSearchSlider({
       el.removeEventListener("scroll", updateFades);
       ro.disconnect();
     };
-  }, [companies.length, updateFades]);
+  }, [companies.length, updateFades, scrollRef]);
 
   const scroll = (dir: "left" | "right") => smoothScroll(dir, STEP);
 
